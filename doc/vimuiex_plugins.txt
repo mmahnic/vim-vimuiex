@@ -1,0 +1,511 @@
+*vimuiex_plugins.txt*	 Vimuiex Plugins           Last Change: May 2010
+			*vimuiex-plugins*
+
+Commands that require "+python" and curses or the "+python_screen" patch:
+
+   VxBufListSelect		    |vimuiex-vxbuflistselect|
+   VxOpenRecentFile		    |vimuiex-vxopenrecentfile|
+   VxTextMenu			    |vimuiex-vxtextmenu|
+   VxFileBrowser		    |vimuiex-vxfilebrowser|
+   VxOccur			    |vimuiex-vxoccur|
+   VxOccurCurrent		    |vimuiex-vxoccurcurrent|
+   VxOccurTags			    |vimuiex-vxoccurtags|
+   VxOccurRoutines		    |vimuiex-vxoccurroutines|
+   VxSourceTasks		    |vimuiex-vxsourcetasks|
+   VxDisplax			    |vimuiex-vxdisplay|
+   VxMarks			    |vimuiex-vxmarks|
+   VxCmd			    |vimuiex-vxcmd|
+   VxMan			    |vimuiex-vxman|
+
+Other commands
+
+   Quickly remap a set of keys      |vimuiex-vxmap|
+   Display command line history     |vimuiex-vxcmdhist|
+
+Commands that require "+python_screen":
+
+   VxLineJump			    |vimuiex-vxlinejump|
+   VxWindowJump			    |vimuiex-vxwindowjump|
+
+Plugins defined in VxLib:
+
+   Preview for QuickFix window      |vxlib-quickfixpreview|
+
+==============================================================================
+POPUP BUFFER EXPLORER					   *vimuiex-vxbuflist*
+
+VxBufListSelect                                  *vimuiex-vxbuflistselect*
+---------------
+
+Displays a list of buffers in an overlapping window. A buffer can be selected 
+from the list as described in |vimuiex-operation|. When <CR> is perssed on a 
+selected buffer the list is closed an the selected buffer is activated. Other
+mappings:
+
+  gs	     Open selected buffer with split
+  gv	     Open selected buffer with vsplit
+  gt, <c-cr> Open selected buffer in a new tab (if not already visible)
+  xd         Delete selected buffer
+  xw         Wipeout selected buffer
+  os         Change the sort order of buffers
+  ou         Toggle display of unlisted buffers
+
+The commands 'gs' and 'gv' can operate on marked buffers. When multiple
+buffers are marked in the list (with the 'm' command) they will be opened
+horizontally/vertically split.
+
+To start use: >
+  :VxBufListSelect
+<
+==============================================================================
+OPEN RECENT FILE                                       *vimuiex-vxrecentfile*
+
+VxOpenRecentFile                                 *vimuiex-vxopenrecentfile*
+----------------
+
+Displays a list of recent files in an overlapping window. The filename is
+displayed in the first column and the directory in the second column. A file
+can be selected from the list as described in |vimuiex-operation|. When <CR>
+is perssed on a selected file the list is closed, the file is loaded (if not
+already loaded) and activated. A file can also be opened with the following
+commands:
+
+  gs	     Open selected file with split
+  gv	     Open selected file with vsplit
+  gt, <c-cr> Open selected file in a new tab
+
+To start use: >
+  :VxOpenRecentFile
+<
+Settings for the plugin:
+
+   Number of recent files in history: >
+   let g:VxRecentFile_size = 50
+<
+
+   Exclude the files from history if they match a regular expression: >
+   let g:VxRecentFile_exclude = ""
+<
+
+   The filenames are case sensitive: >
+   let g:VxRecentFile_nocase = 1
+<
+
+==============================================================================
+BROWSE THE FILESYSTEM TO OPEN A FILE                    *vimuiex-vxdired*
+
+VxFileBrowser                                    *vimuiex-vxfilebrowser*
+-------------
+
+Displays the contents of a directory implied by the |browsedir| option. The
+subdirectories are displayed with a preceeding '+'. The files are sorted by
+name. A file or a directory can be selected from the list as described in
+|vimuiex-operation|. When <CR> is pressed on a selected file, that file is
+loaded (if not already loaded) and activated. The selected file can also be
+opened with the following commands:
+
+  gs	     Open selected file with split
+  gv	     Open selected file with vsplit
+  gt, <c-cr> Open selected file in a new tab
+
+If <CR> is pressed on a subdirectory, its contents is displayed in the list.
+When <BS> is pressed on any item, the curent directory is closed and its
+parent directory is displayed. When changing directories, currently marked
+items are unmarked.
+
+If files are marked, they will be open instead of the selected file, unless
+the selected item is a directory. In this case a directory change will be
+executed.
+
+Pressing 'd' on any item will close the file list and display a list of 
+directories from which files were recently loaded. If <CR> is pressed on a 
+selected directory, the list of directories will close and the content of the 
+selected directory will be displayed in the file list.
+
+If 'e' is pressed the user is prompted for the name of a (new) file to be
+open in the currently displayed directory.
+
+					      *vimuiex-vxfilebrowser-deeplist*
+Files from subdirectories of the current directory can be displayed in a
+single list. To increase the number of subdirectory levels to be displayed
+press <C-L>. To decrease press <C-H> and to cancel subdirectory display press
+<C-K>. The filesystem is read in a background thread while the list is already
+displayed. When a key is pressed, the pending files read by the reader thread
+are added to the list. When the number of subdirectory levels is changed, the
+contents of the list is cleared an the reading thread is restarted.
+
+
+The keysequence 'oa' will toggle the visibility of file attributes.
+
+
+Settings                                      *vimuiex-vxfilebrowser-settings*
+
+The list of files and directories to skip while reading the filesystem can
+be defined in a comma-separated list: >
+   let g:VxFileBrowser_skipFiles = '*.pyc,*.o,*.*~,*.~*,.*.swp'
+   let g:VxFileBrowser_skipDirs = '.git,.svn'
+<
+The size of the recent directory list can be changed with: >
+   let g:VxRecentDir_size = 20
+<
+
+VxFileFilter                                  *vimuiex-vxfilefilter*
+-------------
+
+Displays the contents of a directory implied by the |browsedir| option and its
+subdirectories up to a certain depth. It may take some time to scan the
+filesystem with many files. The initial list is displayed after the first 300
+files are added. The subsequent files are read in a background thread and the
+list is updated after every keypress until all the files are added. The
+listbox starts up in filtering mode. The operation is exactly the same as in
+VxFileBrowser (|vimuiex-vxfilebrowser|).
+
+Filtering a large list of file items may be slow. To speed things up, the
+filter is applied only to the already dispayed list, if the new value of
+the filter string is longer than the previous one. When a character is
+deleted from the filter string, all items are refiltered.
+
+A large list of files may consume a lot of memory (approx. 800 bytes per item!
+that is 40MB for 50k files). If the computer doesn't have enough memory,
+g:VxFileFilter_limitCount should be set (see below). The filesystem is
+processed in breadth-first-search order, so at least the files from the
+higher directory levels should be processed before the limit applies.
+
+
+Settings                                      *vimuiex-vxfilefilter-settings*
+
+The list of files and directories to skip while reading the filesystem can
+be defined in a comma-separated list: >
+   let g:VxFileFilter_skipFiles = '*.pyc,*.o,*.*~,*.~*,.*.swp'
+   let g:VxFileFilter_skipDirs = '.git,.svn'
+<
+The number of subdirectory levels that are processed can be changed with: >
+   let g:VxFileFilter_treeDepth = 6
+<
+The number of files displayed can be limited by setting the following variable
+to a value greater than 0 (0 means no limit): >
+   let g:VxFileFilter_limitCount = 50000
+<
+
+==============================================================================
+SHOW OCCURRENCES OF REGULAR EXPRESSIONS                *vimuiex-vxoccur-lib*
+
+A set of commands that search for regular expressions in files. The lines
+where matches are found are displayed in a popup listbox. A line can be
+selected from the list as described in |vimuiex-operation|. If <CR> is pressed
+on a selected line, the listbox is closed and the selected line is displayed.
+If 'v' is pressed on a selected line, the line is displayed in a preview
+window while the listbox is still shown. ( TODO: the listbox may still cover
+the preview window, needs to be resized/moved).
+
+After the list is closed the next/previous item can be selected with commands
+VxCPrev/VxCNext. A history of recent search results is stored in memory. To
+activate a diferent set of search results the command VxOccurSelectHist can be
+used. The command VxOccurHist redisplays the active search results.
+
+
+VxOccur                                          *vimuiex-vxoccur*
+-------
+
+Prompts for a regular expression to search for and a range of files to process
+(|vimuiex-filerange|). The matching lines from the selected range of files are
+displayed in the popup listbox. 
+
+
+By default the command |vimgrep| is used to make the search if the file range
+is other than the current buffer. In this case the QuikcFix list is populated
+before the list is passed to the popup listbox. 
+
+						*vxoccur_grep_mode*
+The plugin can also use external programs grep, xargs and find to make the
+search.  This is controlled with the variable g:vxoccur_grep_mode which can
+have one of the following values:
+
+   0 - use internal vimgrep (default)
+   1 - use grep (-r)
+   2 - use the combination find + xargs + grep
+
+The external programs can be set using the following variables (originally
+used by vimscript#311 grep.vim):
+
+   |Grep_Path| variable is used to locate the grep utility.
+    By default, this is set to "grep".
+
+   |Grep_Find_Path| variable is used to locate the find utility.
+    By default, this is set to "find".
+
+   |Grep_Xargs_Path| variable is used to locate the xargs utility.
+    By default, this is set to "xargs".
+
+The search results are also stored in the history of searches and can be
+reactivated later without performing the search again. See the commands
+|vimuiex-vxoccurhist| and |vimuiex-vxoccurselecthist|.
+
+
+VxCNext/VxCPrev                            *vimuiex-vxcnext* *vimuiex-vxcprev*
+---------------
+
+The commands operate like |:cnext| and |:cprev| except they operate on the
+active search results (from any VxOccur* operations).
+
+To navigate quickly through a list of results, see |vimuiex-vxmap|.
+
+
+VxOccurHist                                      *vimuiex-vxoccurhist*
+-----------
+
+Redisplays the active (last used) search results without performing the
+search.
+
+
+VxOccurSelectHist                                *vimuiex-vxoccurselecthist*
+-----------
+
+Displays a list of recent search results from which an active result set can
+be selected.
+
+
+VxOccurCurrent                                   *vimuiex-vxoccurcurrent*
+--------------
+
+Captures the output of the command '[I' and displays it in the popup listbox.
+
+Suggested keyboard mapping:
+>
+   nnoremap <silent> [I :VxOccurCurrent<cr>
+<
+   
+VxOccurTags                                      *vimuiex-vxoccurtags*
+-----------
+
+Passes the current file to ctags and displays the results in the popup
+listbox.
+
+
+VxOccurRoutines                                  *vimuiex-vxoccurroutines*
+---------------
+
+Finds definitions of "routines" in the current buffer. Routines are defiend
+with regular expressions (one regexp for each filetype) which are stored in
+a global routine definition dictionary.
+Example:
+>
+   " A simple routine regexp for vim mode
+   let g:vxoccur_routine_def["vim"] = '\(^\s*\(s:\)\?\(func|function\)!\?\W\)'
+<
+
+VxSourceTasks                                    *vimuiex-vxsourcetasks*
+-------------
+
+Finds lines with tasks in the selected range of files (|vimuiex-filerange|)
+and displays them in a popup listbox. The tasks are marked with special words
+which can be defined in a global variable:
+>
+   let g:vxoccur_task_words=['TODO', 'FIXME', 'BUG']
+<
+The default task words are: ['COMBAK', 'TODO', 'FIXME', 'XXX']
+
+
+File ranges used with VxOccur                    *vimuiex-filerange*
+-----------------------------
+
+Currently these ranges can be selected:
+   -b => current buffer
+   -B => all the buffers accessible by :bnext
+   -d [filemask, ...] => current buffer directory
+   -D [filemask, ...] => current buffer directory and subdirectories
+   -w [filemask, ...] => working directory
+   -W [filemask, ...] => working directory and subdirectories
+   - => use the last used range
+
+The range is entered when Vim displays a prompt like
+>
+   Range (bdDwW)[-b]: -
+<
+The available ranges are displayed in () and a part of the last used range is
+displayed in []. Different ranges can be entered or selected from history. An
+empty range will cancel a VxOccur operation.
+
+Example: search in txt and doc files in current directory and subdirectories:
+>
+   Range (bdDwW)[-b]: -D *.txt *.doc
+<
+
+NOTE:
+The prefix '-' is used because input() can't distinguish between an empty
+string and a cancelled input. To reuse the last used search range, the user
+can press enter after the prompt is displayed if a nonempty default value is
+used. The procedure can also recognize a range if it doesn't start with '-',
+but it will be added to the history with the prefix '-'.
+NOTE:
+Instead of capital leters a double lower-case range can be used: -bb will be
+interpreted as -B, etc.
+
+==============================================================================
+QUICKLY REMAP A SET OF KEYS                            *vimuiex-vxmap*
+
+This plugin makes it easy to have different sets of functions bound to a
+single set of keys.
+
+Quick installation:
+   Put the follownig in ~/.vimrc: >
+   map <c-F5> <Plug>VxMapDefaultKeys
+<
+Usage: When <Ctrl-F5> is pressed the following menu is displayed:
+   Buffer prev/next
+   Tab prev/next
+   cprev/cnext
+   lprev/lnext   
+   VxCPrev/VxCNext
+
+After an item is selected, the appropriate functions are mapped to the keys
+<F5> and <F6>. In the last case, the key <F7> will execute VxOccurSelectHist
+(see |vimuiex-vxoccurselecthist|).
+
+CUSTOMIZATION
+
+1. Use different keys: >
+   let g:vxmap_quick_keys = {'default!': ['<F2>', '<F3>', '<F4>']}
+<
+The default keyset is <F5>, <F6>, <F7>.
+
+2. Add additional keys: >
+   let g:vxmap_quick_keys = {'default': ['<F8>']}
+<
+A set may contain an arbitrary number of keys.
+
+3. Add additional command sets: >
+   let g:vxmap_quick_commands = {'default': [
+         \ [ '&Move up/down', ['k', 'j']],
+         \ [ '&Move left/right', ['h', 'l']]
+         \ ]}
+<
+Use 'default!' as the dictionary key to replace the list of command sets.  The
+number of Vim commands in a set is arbitrary. When a set is activated, only as
+many commands will be mapped as there are keys in the set. If there are more
+keys than commands in the set, the extra keys will not be changed.
+
+4. Adding new sets of keys and commands
+
+Use a different dictionary key instead of 'default'. If a set of keys 'mykeys'
+and a list of commands 'mycommands' are defined, then the following code maps
+a selected command set from 'mycommands' to 'mykeys':
+>
+   call vimuiex#vxmap#InstallKeys('mykeys','mycommands')
+<
+Mapped on a key: >
+   nmap <c-F9> :call vimuiex#vxmap#InstallKeys('mykeys','mycommands')
+<
+
+
+==============================================================================
+POPUP MENU NAVIGATOR				          *vimuiex-popupmenu*
+
+VxTextMenu                                       *vimuiex-vxtextmenu*
+----------
+
+Displays a list of top-level menus in a popup listbox. An item from the menu 
+can be selected as described in |vimuiex-operation|. When <CR> is pressed on a 
+selected item it is activated. If the item is a submenu it will be displayed, 
+otherwise a command bound to the menu will be executed. When <BS> is pressed on 
+any item, the curent menu is closed an its parent menu is activated.
+
+To start use: >
+  :VxTextMenu
+<
+TODO: add mouse support
+
+Note: The menu initially starts with menu shortcuts enabled. To disable them 
+and enter normal listbox navigation mode, press '&'.
+
+==============================================================================
+ENHANCE INTERNAL COMMANDS                              *vimuiex-vxcapture*
+
+
+VxCmd                                            *vimuiex-vxcmd*
+-----
+
+Captures the output of a Vim command and display it in a popup list. Examples:
+
+   Show the list of Vim buffers (see also |vimuiex-vxbuflist|): >
+   :VxCmd ls
+<
+   Show the contents of the current directory (see also |vimuiex-vxdired|): >
+   :VxCmd !ls -la
+<
+Note: VxCmd will fail if the Vim command calls |redir| during execution.
+
+
+
+VxMan                                            *vimuiex-vxman*
+-----
+
+Captures the output of a man command and displays it in a popuplist. This 
+command is a shorthand for: >
+   :VxCmd !man -P cat <man-query> | col -b
+<
+and requires the col program from the bsdmainutils debian package.
+
+To replace the default command K use: >
+   nmap <silent> K :VxMan <cword> <CR>
+<
+
+VxDisplay					 *vimuiex-vxdisplay*
+---------
+
+Displays the contents of the registers (output of the :display command) in a 
+popup listbox. If <CR> is pressed on a selected item, the contents of the 
+register is pasted into current buffer. If <@> is pressed on a selected item,
+the contents of the register will be executed as a macro.
+
+
+VxMarks						 *vimuiex-vxmarks*
+-------
+
+Displays the marks (output of the :marks command) in a popup listbox. If <CR> 
+is pressed on a valid mark, the cursor jumps to that mark.
+
+
+
+==============================================================================
+JUMP TO SCREEN LOCATION WITH KEYBOARD			   *vimuiex-vxjump*
+
+NOTE: These plugins require "+python_screen" feature
+
+VxLineJump                                       *vimuiex-vxlinejump*
+----------
+
+Displays lables in the line-number area and waits for the user to enter a
+label. When the label is entered, the cursor moves to the line with the
+corresponding label.
+
+
+VxWindowJump                                     *vimuiex-vxwindowjump*
+------------
+
+Displays a label in the center of every window and waits for the user to enter
+a label. When the label is entered, the cursor moves to the window with the
+corresponding label.
+
+==============================================================================
+DISPLAY COMMAND LINE HISTORY                              *vimuiex-vxcmdhist*
+
+A utility function that displays the items from the appropriate vim history in
+a popup window.  The current content of the command line is used to highlight
+the initial item in the list. When an item is selected from the list with <cr>
+it is inserted into the command line replacing the current value.
+
+By default the function is bound to the keys <pageup> and <pagedown>. The
+default mapping can be removed by setting g:vxcmdhist_default_map in .vimrc:
+>
+  let g:vxcmdhist_default_map = 0
+<
+To use another mapping add the following to .vimrc (replace <up> with the
+desired key):
+>
+  cnoremap <up> <C-\>evimuiex#vxcmdhist#PopupHist()<cr>
+<
+
+
+
+## vim:tw=78:noet:wrap:ts=8:ft=help:norl:
