@@ -1,0 +1,317 @@
+*vimuiex.txt*        User Interface Extensions      Last Change: August 2010
+
+User Interface Extensions (Experiment)
+Version 0.7
+
+ *vimuiex*
+  Description                     |vimuiex-description|
+  Default popup list operation    |vimuiex-operation|   
+  Plugins                         |vimuiex-plugins|     
+  Python library usage            |vimuiex-pythonlib|   
+  Installation                    |vimuiex-installation|
+  Example configuration           |vimuiex-keymap|
+
+For Vim version 7.2 and above.
+Requires python interface. A patch is required for GVim.
+
+==============================================================================
+DESCRIPTION					*vimuiex-description*
+
+Vimuiex is a library and a set of plugins for the Vim text editor. It adds a 
+popup listbox that is displayed in an overlapping window. The list can be 
+navigated with the usual Vim keys. When an item is selected from the list an 
+arbitrary action can be taken.
+
+The core of the library is written in Python so it will only work if "+python" 
+feature is present in Vim at runtime.
+
+==============================================================================
+DEFAULT POPUP LIST OPERATION			*vimuiex-operation*
+
+A popup list has 4 basic modes of operation:
+   normal navigation		|vimuiex-navigation|
+   item filtering		|vimuiex-filtering|
+   quick-char selection		|vimuiex-quickchar|
+   numeric selection		|vimuiex-numeric|
+
+				       *vimuiex-navigation*
+The following commands are available when in normal operation:
+
+   j, <down>, <tab>	  next
+   k, <up>, <s-tab>	  previous
+   h, <left>		  shift left
+   l, <right>		  shift right
+   n, <space>, <pgdown>	  page down
+   b, <pgup>		  page up
+   0, gg, <home>	  top of list
+   $, G, <end>		  bottom of list
+   f, /			  enter filtering mode |vimuiex-filtering|
+   i, #			  enter numeric mode |vimuiex-numeric|
+   &			  enter quickchar mode |vimuiex-quickchar|
+   q, <Esc>		  close the list without selection
+   <CR>			  select the current item and execute a command
+   wh, wj, wk, wl	  move window to border
+   wc, wv, wC		  center window
+   m                      toggle item's marked state
+   F1                     help - shows the currently mapped keys for all modes
+
+				       *vimuiex-filtering*
+In filtering mode new ASCII characters are added to the filter and only the 
+items that match the filter are displayed. First the items that start with the 
+filter string are displayed followed by the items that contain the filter 
+string elsewhere. In filtering mode the following keys can be used:
+
+   <Esc>	     clear the filter and exit filtering mode
+   <CR>		     exit filtering mode and keep the filter string
+   <BS>		     remove the last character from the filter string
+   <tab>             exit filtering mode and move to next item
+   <s-tab>           exit filtering mode and move to previous item
+
+Multiple search terms can be entered in the filter, separated by ','. A term
+that begins with '-' will succeed on items that don't contain the term. The
+filter selects an item if all terms succeed for that item.
+
+(TODO: new keys can be added to the popup list keymap)
+
+				       *vimuiex-numeric*
+When the listbox enters numeric-selection mode, numbers are displayed in front 
+of every item. When numbers are entered the currently selected item changes 
+according to the entered numbers. The keys "mjkluio" are "mapped" to numbers 
+"0123456" which is the position of the numeric keyboard on a notebook with an 
+english keyboard layuot.
+
+				       *vimuiex-quickchar*
+This mode is functional only when a quick-char (shortcut letter) is assiged to 
+every item in the list.
+
+Items are selected with letters from the keyboard. Each item has a quick-char 
+that leads to it marked. If an item has a unique quick-char the item will be 
+selected when the appropriate key is pressed. Otherwise pressing the key will 
+cycle between the items and <CR> must be pressed to select the item.
+
+==============================================================================
+POPUP LIST CONFIGURATION				*vimuiex-config*
+
+Position of the listbox for each plugin:
+>
+   call vxlib#plugin#Init()
+   VxLet VxPopupListPos <plugin-id> "<plugin-options>"
+<
+where <plugin-id> is usually the command associated with the plugin.
+The available options are:
+    size=x,y	size of the popuplist; absolute or relative
+		x,y integer => absolute size
+                x,y float   => relative size
+    minsize=x,y	minimal size of the popuplist; absolute or relative
+		x,y same as above
+    position=F	position of the popuplist
+		F=[ltrbvhc]*  align to border (l/t/r/b) or center (v/h/c)
+		F=Nxy   divide the screen in NxN cells and align to cell xy
+			where 1<=x,y<=N
+    autosize=F  F=[vh]* autosize the box in direction (v/h) according to the
+			size of the list content
+    firstcolumn=b	b=[01]; not yet
+    startupmode=F	F=[/%#]; not yet
+
+Example:
+  1. By default align all popup listboxes to bottom-left, let the size of each
+  popup box be 1/2 of the screen:
+>
+  VxLet VxPopupListPos default "position=bl size=0.5,0.5"
+<
+  2. When using VxBufListSelect show the box in the upper middle position of
+  the screen, let min size be 8 lines and 1/2 of available width:
+>
+  VxLet VxPopupListPos VxBufListSelect "position=532 minsize=0.5,8"
+<
+==============================================================================
+PYTHON LIBRARY USAGE				        *vimuiex-pythonlib*
+
+NOTE: From version 0.7 the function vimuiex#vxlist#VxPopup() is available
+which allows the use of the popup listbox with pure vimscript. Some
+documentation is in the code (vxlist.vim, example in vxcapture.vim).
+
+Example: Display a list of buffers		       *vimuiex-list-example*
+
+1. Prepare python so that it will load modules from ~/.vim/modpython: 
+>
+  call vxlib#python#prepare()
+<
+It is best to add this call to every function that is exported from the script 
+and uses python modules installed in modpython. This way python won't be used 
+when it is not needed.
+
+2. Prepare a list of buffers and store them to a global vim list variable: 
+>
+    redir => bflst
+    exec 'silent ls'
+    redir END
+    let g:VXBUFLIST_bufnames = split(bflst, '\n')
+<
+3. Use python to load and display the list:
+>
+  python << EOF
+  import vim
+  import vimuiex.popuplist as lister
+<
+  Create a CList object and load the items from the global variable into the 
+  list. The strings from the list will be converted to unicode using the 
+  |encoding| setting. The tabs in list items are used to separate the columns 
+  of the list. To set the initial position of the window see 
+  |vimuiex-python-position|.
+>
+  List = lister.CList(title="Buffers")
+  List.loadVimItems("g:VXBUFLIST_bufnames")
+<
+  Set the callback function that will be used when an item is selected 
+  (cmdAccept). The function must be global. The placeholder "{{i}}" will be 
+  converted to the index of the selected item. Another callback function can 
+  be defined in case some action should be taken when selection from the list 
+  is aborted (cmdCancel).
+>
+  List.cmdAccept = "call VXBUFLIST_cb_selectitem({{i}})"
+  List.cmdCancel = ""
+<
+  Process the list. The initially selected item can be set. This can be useful 
+  if the buffer list is in MRU order. Setting curindex to 1 will select the 
+  alternate buffer.
+
+  In the curses implementation process() will exit after the list processing 
+  has finished. In the wx implementation it will exit immediately.
+>
+  List.process(curindex=1)
+<
+  Remove the refeence to the List variable. This may free some memory used by 
+  python. The List variable is defined globally and remains in memory between 
+  calls to python. In wx implementation the memory will be freed only after 
+  the window with the list is closed.
+>
+  List=None
+  EOF
+<
+4. Define the callback function
+>
+  function! VXBUFLIST_cb_selectitem(index)
+     let txt = g:VXBUFLIST_bufnames[a:index]
+     exec "echo \'" . txt . "\'"
+  endfunc
+<
+See also code in: vxbuflist.vim, vxtextmenu.vim, vxrecentfile.vim
+
+
+Initial position of the window			  *vimuiex-python-position*
+------------------------------
+
+TODO: Changed in version 0.6.
+Example (.vimrc): >
+      call vxlib#plugin#Init()
+      VxLet VxPopupListPos default "position=525"
+      VxLet VxPopupListPos VxBufListSelect "position=534 minsize=0.5,8"
+      VxLet VxPopupListPos VxOpenRecentFile "position=534 minsize=0.5,8"
+      VxLet VxPopupListPos VxTextMenu "position=524"
+<
+  Interpretation:
+    position=534    grid=5x5 cells, align to cell (col=3,row=4)
+		    cell numbers start with 1
+    minsize=0.5,8   50% of width, 8 lines
+
+Version 0.5:
+
+When creating a CList or CTextMenu the size and position of the popup listbox 
+can be specified as construction parameters:
+
+   position: (x, y); if None, center the listbox
+   align:    alignment string (eg. "TL", "BR", "T", ...); overrides position
+   size:     (width, height); if None, half of screen size in each direction
+   autosize: autosize string (eg. "V", "H", "VH")
+
+For example a menu constructed with:
+>
+   Menu = menu.CTextMenu(align="TL", autosize="VH")
+<
+will place the menu at the top-left corner of the vim screen and autosize the 
+menu in the vertical and horizontal direction.
+
+==============================================================================
+INSTALLATION						*vimuiex-installation*
+
+To install:
+  - Download the vimuiex.zip.
+  - Extract the zip archive into your runtime directory (eg. ~/.vim).
+  - Start Vim or goto an existing instance of Vim.
+  - Execute the following command:
+>
+      :helptag <your runtime directory>/doc
+<
+    This will generate all the help tags for any file located in the doc
+    directory.
+
+To use the library in GVim a patch must be applied to Vim source. The patch is
+available at:
+  http://sourceforge.net/projects/vimuiex/files/
+
+Windows: Python must be installed (http://www.python.org). A patch must be
+applied to Vim source. The patch and prebuilt binaries are available at:
+  http://sourceforge.net/projects/vimuiex/files/
+
+Note: In versions 0.1 - 0.4 a wxpython implementation was also available. The
+implementation was not updated and tested in versions 0.5-0.7.
+
+==============================================================================
+EXAMPLE CONFIGURATION				       	      *vimuiex-keymap*
+
+Here is an example configuration that maps most of the commands from the
+vimuiex package. The code can be copied to .vimrc.
+
+      call vxlib#plugin#Init()
+
+      " configure the positions of various popup windows
+      VxLet VxPopupListPos default "position=525"
+      VxLet VxPopupListPos VxBufListSelect "position=534 minsize=0.5,8"
+      VxLet VxPopupListPos VxOpenRecentFile "position=534 minsize=0.5,8"
+      VxLet VxPopupListPos VxTextMenu "position=524"
+
+      " VxOccur: use grep+xargs+find
+      let g:vxoccur_grep_mode = 2
+
+      nmap <silent> <F2> <Plug>VxFileBrowser
+      imap <silent> <F2> <Plug>VxFileBrowser
+      vmap <silent> <F2> <Plug>VxFileBrowser
+      nmap <silent> <s-F2> <Plug>VxFileFilter
+      imap <silent> <s-F2> <Plug>VxFileFilter
+      vmap <silent> <s-F2> <Plug>VxFileFilter
+      nmap <silent> <F3> <Plug>VxBufListSelect
+      imap <silent> <F3> <Plug>VxBufListSelect
+      vmap <silent> <F3> <Plug>VxBufListSelect
+      nmap <silent> <s-F3> <Plug>VxOpenRecentFile
+      imap <silent> <s-F3> <Plug>VxOpenRecentFile
+      vmap <silent> <s-F3> <Plug>VxOpenRecentFile
+      nmap <silent> <c-F5> <Plug>VxMapDefaultKeys
+      imap <silent> <c-F5> <Plug>VxMapDefaultKeys
+      vmap <silent> <c-F5> <Plug>VxMapDefaultKeys
+      nmap <silent> <F9> <Plug>VxTextMenu
+      imap <silent> <F9> <Plug>VxTextMenu
+      vmap <silent> <F9> <Plug>VxTextMenu
+      nmap <silent> gl <Plug>VxLineJump
+      vmap <silent> gl <Plug>VxLineJump
+      nmap <silent> gt <Plug>VxWindowJump
+      vmap <silent> gt <Plug>VxWindowJump
+      nmap <silent> [I <Plug>VxOccurCurrent
+      vmap <silent> [I <Plug>VxOccurCurrent
+   
+      " The following keymaps conflict with netrw-gx, so we disable it
+      let g:netrw_nogx=1
+      nmap <silent> gxr <Plug>VxOccurRoutines
+      nmap <silent> gxt <Plug>VxOccurTags
+      nmap <silent> gxx <Plug>VxOccurRegex
+      nmap <silent> g/ <Plug>VxOccurRegex
+
+      nmap <silent> gxh <Plug>VxOccurSelectHist
+      nmap <silent> gxv <Plug>VxOccurHist
+      nmap <silent> gxn <Plug>VxCNext
+      nmap <silent> gxp <Plug>VxCPrev
+
+
+
+
+## vim:tw=78:noet:wrap:ts=8:ft=help:norl:
