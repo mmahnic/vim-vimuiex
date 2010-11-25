@@ -125,7 +125,7 @@ finish
    " each list item is: ['menu entry', ['command', 'command', ...]]
    call s:CheckSetting('g:vxmap_quick_commands', "{'default': []}")
 
-   " vimuiex/popup(/choice, not yet)
+   " vimuiex/popup/choice(/tlib, not yet)
    call s:CheckSetting('g:vxmap_quick_menu', "'vimuiex'")
 
    nmap <silent><unique> <Plug>VxMapDefaultKeys :call vimuiex#vxmap#InstallKeys('default','default')<cr>
