@@ -51,7 +51,7 @@ call s:DefRoutines('slice',
    \ '\(^\s*' . s:ReWords('class|interface|struct|enum|sequence|module', '|') . '\W\)', '')
 call s:DefRoutines('vim', '\(^\s*\(s:\)\?' . s:ReWords('func|function', '|') . '!\?\W\)', '')
 call s:DefRoutines('xhtml', g:vxoccur_routine_def['html'], '')
-
+call s:DefRoutines('viki', '^\*\+\s', '')
 
 "================================================================= 
 " LATEX
@@ -138,7 +138,7 @@ endfunc
 " reStructuredText
 "================================================================= 
 let s:restTitles = []
-call s:DefRoutines('rst', '^[-=`:''"~^_*+#<>]\+\s*$', 'vimuiex#vxoccur_defaults#ExtractRestTitle',
+call s:DefRoutines('rst', '^\([-=`:''"~^_*+#<>]\)\1\+\s*$', 'vimuiex#vxoccur_defaults#ExtractRestTitle',
          \ {'init': 'vimuiex#vxoccur_defaults#InitRestTitle'} )
 
 function! vimuiex#vxoccur_defaults#InitRestTitle()
@@ -152,13 +152,14 @@ function! vimuiex#vxoccur_defaults#ExtractRestTitle()
    endif
    let cur = substitute(getline(lnstart), '\s\+$', '', 'g')
    let title = substitute(getline(lnstart-1), '\s\+$', '', 'g')
-   if len(cur) < 1 || len(title) < 1 || len(cur) < len(title)
+   let ttlen = strdisplaywidth(title)
+   if len(cur) < 1 || ttlen < 1 || len(cur) < ttlen
       return ''
    endif
    " TODO: look lnstart+2 for cur pattern; if found, return ''
    if lnstart > 2
       let lnprev = substitute(getline(lnstart-2), '\s\+$', '', 'g')
-      if len(lnprev) < len(title) || lnprev[:len(title)] != cur[:len(title)]
+      if len(lnprev) < ttlen || lnprev[:ttlen] != cur[:ttlen]
          let lnprev = ''
       endif
    else | let lnprev = ''
@@ -171,7 +172,7 @@ function! vimuiex#vxoccur_defaults#ExtractRestTitle()
       call add(s:restTitles, ttype)
       let level = len(s:restTitles) - 1
    endif
-   return printf('%*s%s', level, '', substitute(title, '^\s\+', '', 'g'))
+   return printf('%*s%s', 2*level, '', substitute(title, '^\s\+', '', 'g'))
 endfunc
 
 "================================================================= 
