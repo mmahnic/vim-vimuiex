@@ -176,6 +176,43 @@ function! vimuiex#vxoccur_defaults#ExtractRestTitle()
 endfunc
 
 "================================================================= 
+" AsciiDoc
+"================================================================= 
+call s:DefRoutines('asciidoc', '^\([-=~^+]\)\1\+\s*$\|^==\+\s\+\S\|\.\S.', 'vimuiex#vxoccur_defaults#ExtractAsciiDocTitle', {})
+
+function! vimuiex#vxoccur_defaults#ExtractAsciiDocTitle()
+   let lnstart = line('.')
+   if lnstart < 2
+      return ''
+   endif
+   let line = getline(lnstart)
+   echom "go " . line
+   if line =~ '^\.\S.'
+      let title = matchstr(line, '^\.\zs.*\ze\s*$')
+      let level = 5
+   elseif line =~ '^==\+\s\+\S'
+      let title = matchstr(line, '^==\+\s\+\zs\(.\+\)\ze\s*=*\s*$')
+      let level = len(matchstr(line, '^==\+\ze.*')) - 1
+   else
+      let cur = substitute(line, '\s\+$', '', 'g')
+      let title = substitute(getline(lnstart-1), '\s\+$', '', 'g')
+      let ttlen = strdisplaywidth(title)
+      if len(line) < 1 || line[0] == '[' || line[0] == '.'
+         return ''
+      endif
+      if len(cur) < 1 || ttlen < 1 || len(cur) < ttlen
+         return ''
+      endif
+      let levels = '=-~^+'
+      let level = stridx(levels, cur[0])
+   endif
+   if level < 0
+      return ''
+   endif
+   return printf('%*s%s', 2*level, '', substitute(title, '^\s\+', '', 'g'))
+endfunc
+
+"================================================================= 
 " Cleanup
 delfunc s:ReWords
 delfunc s:DefRoutines
