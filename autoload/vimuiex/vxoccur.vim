@@ -589,16 +589,23 @@ function! s:VxShowCapture(occurType, title, ...)
       let s:curHistItem = {} 
    endif
 
-   call vimuiex#vxlist#VxPopup(items, a:title, {
-      \ 'optid': a:occurType,
-      \ 'init': s:SNR . 'InitVxShowCapture',
-      \ 'current': current,
-      \ 'callback': s:SNR . 'SelectItem_cb({{i}})',
-      \ 'callback_cancel': s:SNR . 'CancelSelection_cb({{i}})',
-      \ 'keymap': [
-         \ ['v', 'vim:' . s:SNR . 'PreviewItem_cb({{i}})']
-      \  ]
-      \ })
+   if has('popuplist')
+      let rslt = pulstest(items)
+      if rslt.status == 'accept'
+         call s:SelectItem_cb(rslt.current)
+      endif
+   else
+      call vimuiex#vxlist#VxPopup(items, a:title, {
+         \ 'optid': a:occurType,
+         \ 'init': s:SNR . 'InitVxShowCapture',
+         \ 'current': current,
+         \ 'callback': s:SNR . 'SelectItem_cb({{i}})',
+         \ 'callback_cancel': s:SNR . 'CancelSelection_cb({{i}})',
+         \ 'keymap': [
+            \ ['v', 'vim:' . s:SNR . 'PreviewItem_cb({{i}})']
+         \  ]
+         \ })
+   endif
    if s:preview_on
       call s:ClosePreview()
       norm zz
@@ -683,11 +690,18 @@ function! vimuiex#vxoccur#VxSelectOccurHist()
    endfor
 
    let s:ShowHistoryItems = 0
-   call vimuiex#vxlist#VxPopup(items, "Activate results", {
-      \ 'optid': 'VxSelectOccurHist',
-      \ 'current': 0,
-      \ 'callback': s:SNR . 'SelectHistory_cb({{i}})'
-      \ })
+   if has('popuplist')
+      let rslt = pulstest(items)
+      if rslt.status == 'accept'
+         call s:SelectHistory_cb(rslt.current)
+      endif
+   else
+      call vimuiex#vxlist#VxPopup(items, "Activate results", {
+               \ 'optid': 'VxSelectOccurHist',
+               \ 'current': 0,
+               \ 'callback': s:SNR . 'SelectHistory_cb({{i}})'
+               \ })
+   endif
 
    if s:ShowHistoryItems
       let histItem = s:OccurHistory[0]
@@ -712,7 +726,7 @@ endfunc
 " =========================================================================== 
 finish
 
-" <VIMPLUGIN id="vimuiex#vxoccur" require="python&&(!gui_running||python_screen)">
+" <VIMPLUGIN id="vimuiex#vxoccur" require="popuplist||python&&(!gui_running||python_screen)">
    call s:CheckSetting('g:vxoccur_routine_def', '{}')
    call s:CheckSetting('g:vxoccur_task_words', "['COMBAK', 'TODO', 'FIXME', 'XXX']")
    call s:CheckSetting('g:vxoccur_hist_size', '10')

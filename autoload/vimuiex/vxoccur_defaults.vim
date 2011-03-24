@@ -56,18 +56,18 @@ call s:DefRoutines('viki', '^\*\+\s', '')
 "================================================================= 
 " LATEX
 "================================================================= 
-call s:DefRoutines('tex', '^\s*\\\%(title\|\%(sub\)*section\){', 'vimuiex#vxoccur_defaults#ExtractLatex')
+call s:DefRoutines('tex', '^\s*\\\%(title\|\%(sub\)*section\*\?\){', 'vimuiex#vxoccur_defaults#ExtractLatex')
 function! vimuiex#vxoccur_defaults#ExtractLatex()
    let ln = getline('.')
    if match(ln, '^\s*\\title{') >= 0
       let text = matchstr(ln, '^\s*\\title{\s*\zs[^}]*\ze')
-   elseif match(ln, '^\s*\\\%(sub\)*section{') >= 0
-      let level_text = substitute(ln, '^\s*\\\(\%(sub\)*\)section{\s*\([^}]*\).*$', '\1}\2', '')
+   elseif match(ln, '^\s*\\\%(sub\)*section\*\?{') >= 0
+      let level_text = substitute(ln, '^\s*\\\(\%(sub\)*\)section\*\?{\s*\([^}]*\).*$', '\1}\2', '')
       let [level, text] = split(level_text, '}', 1)
       let ll = len(level) / 3
       let text = printf('%*s%s', ll, '', text)
    else 
-      let text = '?'
+      let text = '? ' . ln
    endif
    return text
 endfunc
