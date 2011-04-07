@@ -590,7 +590,7 @@ function! s:VxShowCapture(occurType, title, ...)
    endif
 
    if has('popuplist')
-      let rslt = pulstest(items)
+      let rslt = popuplist(items)
       if rslt.status == 'accept'
          call s:SelectItem_cb(rslt.current)
       endif
@@ -691,7 +691,7 @@ function! vimuiex#vxoccur#VxSelectOccurHist()
 
    let s:ShowHistoryItems = 0
    if has('popuplist')
-      let rslt = pulstest(items)
+      let rslt = popuplist(items)
       if rslt.status == 'accept'
          call s:SelectHistory_cb(rslt.current)
       endif

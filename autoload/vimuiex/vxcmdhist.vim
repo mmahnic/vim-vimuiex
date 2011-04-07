@@ -41,12 +41,23 @@ function! vimuiex#vxcmdhist#PopupHist()
    endif
 
    let s:selected = -1
-   call vimuiex#vxlist#VxPopup(hist, "Cmd History", {
-            \ "optid": "VxCmdHistoryPopup",
-            \ "callback": s:SNR . 'SelectItem({{i}})',
-            \ "current": current,
-            \ "prompt": '>>>' . cmdtype . cmdline
-            \ })
+   if has('popuplist')
+      let rslt = popuplist({
+               \ 'title': 'Cmd History',
+               \ 'items': hist,
+               \ 'pos': '18',
+               \ })
+      if rslt.status == 'accept'
+         let s:selected = rslt.current
+      endif
+   else
+      call vimuiex#vxlist#VxPopup(hist, 'Cmd History', {
+               \ 'optid': 'VxCmdHistoryPopup',
+               \ 'callback': s:SNR . 'SelectItem({{i}})',
+               \ 'current': current,
+               \ 'prompt': '>>>' . cmdtype . cmdline
+               \ })
+   endif
    if s:selected >= 0
       let cmdline = hist[s:selected]
    endif
@@ -62,7 +73,7 @@ endfunc
 " =========================================================================== 
 finish
 
-" <VIMPLUGIN id="vimuiex#vxcmdhist" require="python&&(!gui_running||python_screen)">
+" <VIMPLUGIN id="vimuiex#vxcmdhist" require="popuplist||python&&(!gui_running||python_screen)">
    call s:CheckSetting('g:vxcmdhist_default_map', '1')
    if g:vxcmdhist_default_map
       cnoremap <pageup> <C-\>evimuiex#vxcmdhist#PopupHist()<cr>

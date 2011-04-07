@@ -50,7 +50,14 @@ function! vimuiex#vxcapture#VxCmd(cmd)
    for line in t1
       call add(s:captured, vxlib#cmd#ReplaceCtrlChars(line))
    endfor
-   call vimuiex#vxlist#VxPopup(s:GetCaptured(), 'Command')
+   if has('popuplist')
+      let rslt = popuplist({
+               \ 'title': 'Command'
+               \ 'items': s:GetCaptured(),
+               \ })
+   else
+      call vimuiex#vxlist#VxPopup(s:GetCaptured(), 'Command')
+   endif
 endfunc
 
 function! vimuiex#vxcapture#VxCmd_QArgs(cmd)
@@ -72,9 +79,19 @@ function! s:SelectItem_marks(index)
 endfunc
 
 function! vimuiex#vxcapture#VxMarks()
-   call vimuiex#vxlist#VxPopup(s:GetMarkList(), 'Marks',
-      \ { 'callback': s:SNR . 'SelectItem_marks({{i}})' }
-      \ )
+   if has('popuplist')
+      let rslt = popuplist({
+               \ 'title': 'Marks'
+               \ 'items': s:GetMarkList(),
+               \ })
+      if rslt.status == 'accept'
+         call s:SelectItem_marks(rslt.current)
+      endif
+   else
+      call vimuiex#vxlist#VxPopup(s:GetMarkList(), 'Marks',
+               \ { 'callback': s:SNR . 'SelectItem_marks({{i}})' }
+               \ )
+   endif
 endfunc
 
 " ------------ Registers ---------------
@@ -97,18 +114,39 @@ function! s:RunRegMacro_cb(index)
    return 'q'
 endfunc
 
+function! s:RunRegMacro_cb_p(state)
+   " if a:state.command == 'run-macro'
+      let nreg = s:captured[a:state.current]
+      exec 'norm "' . nreg . 'p'
+   " endif
+endfunc
+
 "function! s:InitRegistersList(pyListName)
 "   exec 'python ' . a:pyListName . '.keymapNorm.setKey(r"@", "vim:' . s:SNR . 'RunRegMacro_cb({{i}})")'
 "endfunc
 " 'init': s:SNR . 'InitRegistersList',
 
 function! vimuiex#vxcapture#VxDisplay()
-   call vimuiex#vxlist#VxPopup(s:GetRegisterList(), 'Registers', {
-      \ 'callback': s:SNR . 'SelectItem_regs({{i}})',
-      \ 'keymap': [
-         \ ['@', 'vim:' . s:SNR . 'RunRegMacro_cb({{i}})']
-      \  ]
-      \ })
+   if has('popuplist')
+      let rslt = popuplist({
+               \ 'title': 'Registers'
+               \ 'items': s:GetRegisterList(),
+               \ 'commands': { 'run-macro': s:SNR . 'RunRegMacro_cb_p' },
+               \ 'keymap': {
+               \     'normal': { '@': 'run-macro' }
+               \     }
+               \ })
+      if rslt.status == 'accept'
+         call s:SelectItem_regs(rslt.current)
+      endif
+   else
+      call vimuiex#vxlist#VxPopup(s:GetRegisterList(), 'Registers', {
+               \ 'callback': s:SNR . 'SelectItem_regs({{i}})',
+               \ 'keymap': [
+               \ ['@', 'vim:' . s:SNR . 'RunRegMacro_cb({{i}})']
+               \  ]
+               \ })
+   endif
 endfunc
 
 " ------------ Man pages ---------------
@@ -130,7 +168,7 @@ endfunc
 " =========================================================================== 
 finish
 
-" <VIMPLUGIN id="vimuiex#vxcapture" require="python&&(!gui_running||python_screen)">
+" <VIMPLUGIN id="vimuiex#vxcapture" require="popuplist||python&&(!gui_running||python_screen)">
    command -nargs=+ -complete=command VxCmd call vimuiex#vxcapture#VxCmd_QArgs(<q-args>)
    command VxMarks call vimuiex#vxcapture#VxMarks()
    command VxDisplay call vimuiex#vxcapture#VxDisplay()
