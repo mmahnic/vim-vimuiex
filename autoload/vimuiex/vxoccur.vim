@@ -590,7 +590,10 @@ function! s:VxShowCapture(occurType, title, ...)
    endif
 
    if has('popuplist')
-      let rslt = popuplist(items)
+      let rslt = popuplist({
+               \ 'items': items,
+               \ 'title': a:title
+               \ })
       if rslt.status == 'accept'
          call s:SelectItem_cb(rslt.current)
       endif
@@ -691,7 +694,10 @@ function! vimuiex#vxoccur#VxSelectOccurHist()
 
    let s:ShowHistoryItems = 0
    if has('popuplist')
-      let rslt = popuplist(items)
+      let rslt = popuplist({
+               \ 'items': items,
+               \ 'title': 'Activate results'
+               \ })
       if rslt.status == 'accept'
          call s:SelectHistory_cb(rslt.current)
       endif

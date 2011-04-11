@@ -56,9 +56,19 @@ endfunc
 
 " TODO: Add preview (like vxoccur)
 function! vimuiex#vxquickfix#VxQuickFix()
-   call vimuiex#vxlist#VxPopup(s:GetQuickfixItems(), "Quickfix List", {
-      \ 'optid': 'VxQuickFix',
-      \ 'callback': s:SNR . 'SelectQfItem_cb({{i}})'
-      \ })
+   if has('popuplist')
+      let rslt = popuplist({
+               \ 'items': s:GetQuickfixItems(),
+               \ 'title': 'Quickfix List'
+               \})
+      if rslt.status == 'accept'
+         call s:SelectQfItem_cb(rslt.current)
+      endif
+   else
+      call vimuiex#vxlist#VxPopup(s:GetQuickfixItems(), "Quickfix List", {
+               \ 'optid': 'VxQuickFix',
+               \ 'callback': s:SNR . 'SelectQfItem_cb({{i}})'
+               \ })
+   endif
 endfunc
 
