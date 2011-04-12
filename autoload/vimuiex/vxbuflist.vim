@@ -128,6 +128,13 @@ function! s:ReloadBufferList()
 endfunc
 
 function! vimuiex#vxbuflist#VxBufListSelect()
+   if has('popuplist')
+      let rslt = popuplist("buffers")
+      if rslt.status == 'accept'
+         call vxlib#cmd#GotoBuffer(0 + rslt.current, '')
+      endif
+      return
+   endif
    exec 'python def SNR(s): return s.replace("$SNR$", "' . s:SNR . '")'
 
 python << EOF
@@ -162,7 +169,7 @@ endfunc
 " =========================================================================== 
 finish
 
-" <VIMPLUGIN id="vimuiex#vxbuflist" require="python&&(!gui_running||python_screen)">
+" <VIMPLUGIN id="vimuiex#vxbuflist" require="popuplist||python&&(!gui_running||python_screen)">
    let g:VxPluginVar.vxbuflist_mru = []
    function s:VIMUIEX_buflist_pushBufNr(nr)
       " mru code adapted from tlib#buffer
