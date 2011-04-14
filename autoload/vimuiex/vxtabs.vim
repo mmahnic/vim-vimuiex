@@ -50,12 +50,12 @@ endfunc
 
 function! vimuiex#vxtabs#VxTabSelect()
    if has('popuplist')
-      let rslt = popuplist({
-               \ 'items': s:GetTabList(),
-               \ 'title': 'Go to tab',
-               \ 'pos': '01',
-               \ })
       " TODO: position below the tabs -> limits (0, 1, ...), pos (00 or 80)
+      let pos = '01'  " don't cover the tabs
+      if has('gui_running')
+         let pos = '00'
+      endif
+      let rslt = popuplist(s:GetTabList(), 'Go to tab', { 'pos': pos })
       if rslt.status == 'accept'
          let itab = rslt.current
          exec 'tabnext ' . (itab + 1)

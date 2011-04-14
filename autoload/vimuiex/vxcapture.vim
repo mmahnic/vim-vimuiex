@@ -51,12 +51,9 @@ function! vimuiex#vxcapture#VxCmd(cmd)
       call add(s:captured, vxlib#cmd#ReplaceCtrlChars(line))
    endfor
    if has('popuplist')
-      let rslt = popuplist({
-               \ 'title': 'Command'
-               \ 'items': s:GetCaptured(),
-               \ })
+      let rslt = popuplist(s:GetCaptured(), 'Command output')
    else
-      call vimuiex#vxlist#VxPopup(s:GetCaptured(), 'Command')
+      call vimuiex#vxlist#VxPopup(s:GetCaptured(), 'Command output')
    endif
 endfunc
 
@@ -80,10 +77,7 @@ endfunc
 
 function! vimuiex#vxcapture#VxMarks()
    if has('popuplist')
-      let rslt = popuplist({
-               \ 'title': 'Marks'
-               \ 'items': s:GetMarkList(),
-               \ })
+      let rslt = popuplist(s:GetMarkList(), 'Marks')
       if rslt.status == 'accept'
          call s:SelectItem_marks(rslt.current)
       endif
@@ -128,9 +122,7 @@ endfunc
 
 function! vimuiex#vxcapture#VxDisplay()
    if has('popuplist')
-      let rslt = popuplist({
-               \ 'title': 'Registers'
-               \ 'items': s:GetRegisterList(),
+      let rslt = popuplist(s:GetRegisterList(), 'Registers', {
                \ 'commands': { 'run-macro': s:SNR . 'RunRegMacro_cb_p' },
                \ 'keymap': {
                \     'normal': { '@': 'run-macro' }

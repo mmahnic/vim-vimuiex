@@ -42,11 +42,7 @@ function! vimuiex#vxcmdhist#PopupHist()
 
    let s:selected = -1
    if has('popuplist')
-      let rslt = popuplist({
-               \ 'title': 'Cmd History',
-               \ 'items': hist,
-               \ 'pos': '18',
-               \ })
+      let rslt = popuplist(hist, 'Cmd History', { 'pos': '18' })
       if rslt.status == 'accept'
          let s:selected = rslt.current
       endif
