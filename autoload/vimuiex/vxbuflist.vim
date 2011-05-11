@@ -129,7 +129,9 @@ endfunc
 
 function! vimuiex#vxbuflist#VxBufListSelect()
    if has('popuplist')
-      let rslt = popuplist("buffers")
+      let rslt = popuplist('buffers', 'Buffers', { 
+               \ 'mru-list': g:VxPluginVar.vxbuflist_mru, 'sort': 'r',
+               \ 'current': 1 } )
       if rslt.status == 'accept'
          call vxlib#cmd#GotoBuffer(0 + rslt.current, '')
       endif

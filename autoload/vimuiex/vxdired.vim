@@ -83,6 +83,135 @@ function! s:GetStartupDir()
    return sdir
 endfunc
 
+function! s:LsSplit(val)
+   let expr = '^\(\S\+\)\s\+\(\S\+\)\s\+\(\S\+\)\s\+\(\S\+\)\s\+\(\S\+\)\s\+\(\S\+\)\s\+\(\S\+\)\s\+\(.*$\)'
+   let parts = matchlist(a:val, expr)
+   let rv = {
+            \ 'flags': parts[1],
+            \ 'sth' : parts[2],
+            \ 'user' : parts[3],
+            \ 'group' : parts[4],
+            \ 'size' : printf('%5s', parts[5]),
+            \ 'date' : parts[6],
+            \ 'time' : parts[7],
+            \ 'filename' : parts[8],
+            \ 'directory' : (parts[1][0] == 'd'),
+            \ 'symlink' : (parts[1][0] == 'l')
+            \ }
+   return rv
+endfunc
+
+function! s:LsModify(val)
+   let pls = s:LsSplit(a:val)
+   if pls.directory
+      let flags = '+ ' . pls.flags
+   else
+      let flags = '  ' . pls.flags
+   endif
+   return join([flags, pls.date, pls.time, pls.size, pls.filename], ' ')
+endfunc
+
+function! s:LsExec(dir)
+   let cmd = '!ls -hal ' . a:dir
+   if has('gui_running')
+      let files = vxlib#cmd#Capture(cmd, 1)
+   else
+      let files = vxlib#cmd#CaptureShell(cmd)
+   endif
+   return files[2:]
+endfunc
+
+function! s:SimplePosixBrowse()
+   let dir = s:GetStartupDir()
+   let opts = {
+            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up' }}
+            \ }
+   while 1
+      let files = s:LsExec(dir)
+      let disp = copy(files)
+      call map(disp, 's:LsModify(v:val)')
+
+      let rv = popuplist(disp, "File Browser: " . dir, opts)
+      if rv.status == 'done:go-up'
+         let dir = fnamemodify(dir, ':p:h:h') " parent directory
+      elseif rv.status == 'accept'
+         if rv.current > 0 && rv.current < len(files)
+            let pls = s:LsSplit(files[rv.current])
+            if pls.directory
+               let dir = dir . '/' . pls.filename
+            else
+               call s:OpenFile_cb(dir . '/' . pls.filename, '')
+               break
+            endif
+         endif
+      else
+         break
+      endif
+   endwhile
+endfunc
+
+function! s:FindSplit(val)
+   let expr = '^\(\S\+\)\s\+\(.*$\)'
+   let parts = matchlist(a:val, expr)
+   let rv = {
+            \ 'flags': parts[1],
+            \ 'filename' : parts[2],
+            \ 'directory' : (parts[1][0] == 'd'),
+            \ 'symlink' : (parts[1][0] == 'l')
+            \ }
+   return rv
+endfunc
+
+function! s:FindModify(val)
+   let pls = s:FindSplit(a:val)
+   if pls.directory
+      let flags = '+ '
+   else
+      let flags = '  '
+   endif
+   return join([flags, pls.filename], ' ')
+endfunc
+
+function! s:FindExec(dir)
+   " suboptimal: returns all files
+   let cmd = '!find "' . a:dir . '" -maxdepth 6 -printf "\%y \%P\n"'
+   if has('gui_running')
+      let files = vxlib#cmd#Capture(cmd, 1)
+   else
+      let files = vxlib#cmd#CaptureShell(cmd)
+   endif
+   return files[1:]
+endfunc
+
+function! s:SimplePosixFilter()
+   let dir = s:GetStartupDir()
+   let opts = {
+            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up' }}
+            \ }
+   while 1
+      let files = s:FindExec(dir)
+      let disp = copy(files)
+      call map(disp, 's:FindModify(v:val)')
+
+      let rv = popuplist(disp, "File Filter: " . dir, opts)
+      if rv.status == 'done:go-up'
+         let dir = fnamemodify(dir, ':p:h:h') " parent directory
+      elseif rv.status == 'accept'
+         if rv.current > 0 && rv.current < len(files)
+            let pls = s:FindSplit(files[rv.current])
+            if pls.directory
+               let dir = dir . '/' . pls.filename
+            else
+               call s:OpenFile_cb(dir . '/' . pls.filename, '')
+               break
+            endif
+         endif
+      else
+         break
+      endif
+   endwhile
+endfunc
+
 " The file browser uses an internal command 'list:dired-select' to open
 " selected items. If the selected item is a file, the internal command will
 " use the expression defined in FBrowse.callbackEditFile to construct
@@ -92,6 +221,14 @@ endfunc
 "     'browse' - show current directory, normal operation
 "     'filter' - show directory tree, filter mode
 function! vimuiex#vxdired#VxFileBrowser(mode)
+   if has('popuplist')
+      if a:mode == 'browse'
+         call s:SimplePosixBrowse()
+      elseif a:mode == 'filter'
+         call s:SimplePosixFilter()
+      endif
+      return
+   endif
    exec 'python def SNR(s): return s.replace("$SNR$", "' . s:SNR . '")'
 
 python << EOF
@@ -131,7 +268,7 @@ endfunc
 " ===========================================================================
 finish
 
-" <VIMPLUGIN id="vimuiex#vxdired" require="python&&(!gui_running||python_screen)">
+" <VIMPLUGIN id="vimuiex#vxdired" require="popuplist||python&&(!gui_running||python_screen)">
    call s:CheckSetting('g:VxRecentFile_nocase', !has('fname_case'))
    call s:CheckSetting('g:VxRecentDir_size', 20)
    call s:CheckSetting('g:VxFileFilter_treeDepth', 6)

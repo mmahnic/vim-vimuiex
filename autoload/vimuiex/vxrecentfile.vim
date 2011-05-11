@@ -56,17 +56,24 @@ function! s:SelectMarkedFiles_cb(marked, index, winmode)
 endfunc
 
 function! vimuiex#vxrecentfile#VxOpenRecentFile()
-   call vimuiex#vxlist#VxPopup(s:GetRecentFiles(), 'Recent files', {
-      \ 'optid': 'VxOpenRecentFile',
-      \ 'callback': s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, '''')', 
-      \ 'columns': 1,
-      \ 'keymap': [
-         \ ['gs', 'vim:' . s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, ''s'')'],
-         \ ['gv', 'vim:' . s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, ''v'')'],
-         \ ['gt', 'vim:' . s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, ''t'')'],
-         \ ['\<s-cr>', 'vim:' . s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, ''t'')'],
-      \  ]
-      \ })
+   if has('popuplist')
+      let rslt=popuplist(s:GetRecentFiles(), 'Recent Files')
+      if rslt.status == 'accept'
+         call s:SelectFile_cb(rslt.current, '')
+      endif
+   else
+      call vimuiex#vxlist#VxPopup(s:GetRecentFiles(), 'Recent files', {
+         \ 'optid': 'VxOpenRecentFile',
+         \ 'callback': s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, '''')', 
+         \ 'columns': 1,
+         \ 'keymap': [
+            \ ['gs', 'vim:' . s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, ''s'')'],
+            \ ['gv', 'vim:' . s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, ''v'')'],
+            \ ['gt', 'vim:' . s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, ''t'')'],
+            \ ['\<s-cr>', 'vim:' . s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, ''t'')'],
+         \  ]
+         \ })
+   endif
    
 endfunc
 
@@ -75,7 +82,7 @@ endfunc
 " =========================================================================== 
 finish
 
-" <VIMPLUGIN id="vimuiex#vxrecentfile" require="python&&(!gui_running||python_screen)">
+" <VIMPLUGIN id="vimuiex#vxrecentfile" require="popuplist||python&&(!gui_running||python_screen)">
    call s:CheckSetting('g:VxRecentFile_size', 50)
    call s:CheckSetting('g:VxRecentFile_exclude', '""')
    call s:CheckSetting('g:VxRecentFile_nocase', !has('fname_case'))
