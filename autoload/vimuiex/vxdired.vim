@@ -153,12 +153,18 @@ endfunc
 function! s:FindSplit(val)
    let expr = '^\(\S\+\)\s\+\(.*$\)'
    let parts = matchlist(a:val, expr)
-   let rv = {
-            \ 'flags': parts[1],
-            \ 'filename' : parts[2],
-            \ 'directory' : (parts[1][0] == 'd'),
-            \ 'symlink' : (parts[1][0] == 'l')
-            \ }
+   if len(parts) < 3
+      let rv = {
+               \ 'flags': '', 'filename' : val,
+               \ 'directory' : 0, 'symlink' : 0
+               \ }
+   else
+      let rv = {
+               \ 'flags': parts[1],
+               \ 'filename' : parts[2],
+               \ 'directory' : (parts[1][0] == 'd'),
+               \ 'symlink' : (parts[1][0] == 'l')
+               \ }
    return rv
 endfunc
 
@@ -173,8 +179,18 @@ function! s:FindModify(val)
 endfunc
 
 function! s:FindExec(dir)
-   " suboptimal: returns all files
-   let cmd = '!find "' . a:dir . '" -maxdepth 6 -printf "\%y \%P\n"'
+   let skipdirs = split(g:VxFileFilter_skipDirs, ',')
+   call map(skipdirs, '"-name \"" . v:val . "\""')
+   let skipfiles = split(g:VxFileFilter_skipFiles, ',')
+   call map(skipfiles, '"-name \"" . v:val . "\""')
+
+   let cmd = '!' . g:Grep_Find_Path . ' "' . a:dir . '" -maxdepth ' . g:VxFileFilter_treeDepth
+   let cmd = cmd . ' -a \( '
+   let cmd = cmd . '  \( -type d -a \( ' . join(skipdirs, ' -o ') . ' \) '
+   let cmd = cmd . '   -o \( \! -type d \) -a \( ' . join(skipfiles, ' -o ') . ' \) '
+   let cmd = cmd . '  \) -prune -o -printf "\%y \%P\n" '
+   let cmd = cmd . ' \)'
+
    if has('gui_running')
       let files = vxlib#cmd#Capture(cmd, 1)
    else
@@ -273,10 +289,12 @@ finish
    call s:CheckSetting('g:VxRecentDir_size', 20)
    call s:CheckSetting('g:VxFileFilter_treeDepth', 6)
    call s:CheckSetting('g:VxFileFilter_skipFiles', "'*.pyc,*.o,*.*~,*.~*,.*.swp'")
-   call s:CheckSetting('g:VxFileFilter_skipDirs', "'.git,.svn'")
+   call s:CheckSetting('g:VxFileFilter_skipDirs', "'.git,.svn,.hg'")
    call s:CheckSetting('g:VxFileFilter_limitCount', 0)
    call s:CheckSetting('g:VxFileBrowser_skipFiles', 'g:VxFileFilter_skipFiles')
    call s:CheckSetting('g:VxFileBrowser_skipDirs', "''")
+   " variables used by grep.vim
+   call s:CheckSetting('g:Grep_Find_Path', "'find'")
 
    function! s:VIMUIEX_dired_SaveHistory()
       let g:VXRECENTDIRS = join(g:VxPluginVar.vxrecentfile_dirs, "\n")
