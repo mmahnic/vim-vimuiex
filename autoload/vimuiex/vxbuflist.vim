@@ -16,7 +16,9 @@ endif
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-call vxlib#python#prepare()
+if !has('popuplist')
+   call vxlib#python#prepare()
+endif
 exec vxlib#plugin#MakeSID()
 let s:bufnumbers = []
 let g:_VxPopupListPosDefault['VxBufListSelect'] = 'minsize=0.4,8'

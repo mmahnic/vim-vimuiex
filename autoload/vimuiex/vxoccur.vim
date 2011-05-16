@@ -13,7 +13,7 @@ endif
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-call vxlib#python#prepare()
+" call vxlib#python#prepare()
 exec vxlib#plugin#MakeSID()
 call vimuiex#vxoccur_defaults#Init()
 " =========================================================================== 

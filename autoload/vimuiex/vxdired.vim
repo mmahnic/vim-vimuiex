@@ -15,7 +15,9 @@ endif
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-call vxlib#python#prepare()
+if ! has('popuplist')
+   call vxlib#python#prepare()
+endif
 exec vxlib#plugin#MakeSID()
 " =========================================================================== 
 
@@ -112,7 +114,7 @@ function! s:LsModify(val)
 endfunc
 
 function! s:LsExec(dir)
-   let cmd = '!ls -hal ' . a:dir
+   let cmd = '!ls -hal --group-directories-first ' . a:dir
    if has('gui_running')
       let files = vxlib#cmd#Capture(cmd, 1)
    else

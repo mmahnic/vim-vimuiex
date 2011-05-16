@@ -15,7 +15,7 @@ endif
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-call vxlib#python#prepare()
+" call vxlib#python#prepare()
 exec vxlib#plugin#MakeSID()
 let g:_VxPopupListPosDefault['VxTabSelect'] = 'position=311'
 " =========================================================================== 
