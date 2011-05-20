@@ -590,7 +590,8 @@ function! s:VxShowCapture(occurType, title, ...)
    endif
 
    if has('popuplist')
-      let rslt = popuplist(items, a:title)
+      let opts = { 'titles': '/' } " TODO: set a regexp when popuplist supports it
+      let rslt = popuplist(items, a:title, opts)
       if rslt.status == 'accept'
          call s:SelectItem_cb(rslt.current)
       endif
