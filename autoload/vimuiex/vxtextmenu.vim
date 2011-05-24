@@ -15,7 +15,9 @@ endif
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-call vxlib#python#prepare()
+if !has('popuplist')
+   call vxlib#python#prepare()
+endif
 exec vxlib#plugin#MakeSID()
 " In console the menu might not have been loaded
 runtime! menu.vim
@@ -42,9 +44,15 @@ function! s:SelectMenu_cb(menupath, mode)
    return 'q'
 endfunc
 
-" TODO: Remove some top-level entries from the menu (Toolbar, Popup)
-" TODO: Implement a pop-up context menu for textmode
 function! vimuiex#vxtextmenu#VxTextMenu(menu, mode, ...)
+   if has('popuplist')
+      let mprov = a:mode . 'menu'
+      call popuplist(mprov, a:menu, {'mode': 'shortcut'})
+      return
+   endif
+
+   " TODO: Remove some top-level entries from the menu (Toolbar, Popup)
+   " TODO: Implement a pop-up context menu for textmode
    exec 'python def SNR(s): return s.replace("$SNR$", "' . s:SNR . '")'
    if a:0 < 1 | let s:LastVisual = ''
    else | let s:LastVisual = a:1
@@ -69,7 +77,7 @@ endfunc
 " =========================================================================== 
 finish
 
-" <VIMPLUGIN id="vimuiex#vxtextmenu" require="python&&(!gui_running||python_screen)">
+" <VIMPLUGIN id="vimuiex#vxtextmenu" require="popuplist||python&&(!gui_running||python_screen)">
    command VxTextMenu call vimuiex#vxtextmenu#VxTextMenu('','n')
    nmap <silent><unique> <Plug>VxTextMenu :call vimuiex#vxtextmenu#VxTextMenu('','n')<cr>
    imap <silent><unique> <Plug>VxTextMenu <Esc>:call vimuiex#vxtextmenu#VxTextMenu('','i')<cr>

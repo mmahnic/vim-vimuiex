@@ -126,7 +126,8 @@ endfunc
 function! s:SimplePosixBrowse()
    let dir = s:GetStartupDir()
    let opts = {
-            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up' }}
+            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up' }},
+            \ 'mode': 'normal'
             \ }
    while 1
       let files = s:LsExec(dir)
@@ -136,6 +137,7 @@ function! s:SimplePosixBrowse()
       let rv = popuplist(disp, "File Browser: " . dir, opts)
       if rv.status == 'done:go-up'
          let dir = fnamemodify(dir, ':p:h:h') " parent directory
+         let opts.mode = rv.mode
       elseif rv.status == 'accept'
          if rv.current > 0 && rv.current < len(files)
             let pls = s:LsSplit(files[rv.current])
@@ -146,6 +148,7 @@ function! s:SimplePosixBrowse()
                break
             endif
          endif
+         let opts.mode = rv.mode
       else
          break
       endif
@@ -204,7 +207,8 @@ endfunc
 function! s:SimplePosixFilter()
    let dir = s:GetStartupDir()
    let opts = {
-            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up' }}
+            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up' }},
+            \ 'mode': 'filter'
             \ }
    while 1
       let files = s:FindExec(dir)
@@ -214,6 +218,7 @@ function! s:SimplePosixFilter()
       let rv = popuplist(disp, "File Filter: " . dir, opts)
       if rv.status == 'done:go-up'
          let dir = fnamemodify(dir, ':p:h:h') " parent directory
+         let opts.mode = rv.mode
       elseif rv.status == 'accept'
          if rv.current > 0 && rv.current < len(files)
             let pls = s:FindSplit(files[rv.current])
@@ -224,6 +229,7 @@ function! s:SimplePosixFilter()
                break
             endif
          endif
+         let opts.mode = rv.mode
       else
          break
       endif

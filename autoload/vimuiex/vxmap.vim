@@ -126,7 +126,7 @@ finish
    call s:CheckSetting('g:vxmap_quick_commands', "{'default': []}")
 
    " vimuiex/popup/choice(/tlib, not yet)
-   call s:CheckSetting('g:vxmap_quick_menu', "'vimuiex'")
+   call s:CheckSetting('g:vxmap_quick_menu', "'popuplist'")
 
    nmap <silent><unique> <Plug>VxMapDefaultKeys :call vimuiex#vxmap#InstallKeys('default','default')<cr>
    imap <silent><unique> <Plug>VxMapDefaultKeys <Esc>:call vimuiex#vxmap#InstallKeys('default','default')<cr>
