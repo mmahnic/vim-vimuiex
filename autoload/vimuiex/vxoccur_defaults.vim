@@ -49,7 +49,7 @@ call s:DefRoutines('apache',
 call s:DefRoutines('python', '^\s*' . s:ReWords('class def', ' ') . '\W', '')
 call s:DefRoutines('slice',
    \ '\(^\s*' . s:ReWords('class|interface|struct|enum|sequence|module', '|') . '\W\)', '')
-call s:DefRoutines('vim', '\(^\s*\(s:\)\?' . s:ReWords('func|function', '|') . '!\?\W\)', '')
+call s:DefRoutines('vim', '\(^\s*' . s:ReWords('fun|func|function', '|') . '!\?\W\)', '')
 call s:DefRoutines('xhtml', g:vxoccur_routine_def['html'], '')
 call s:DefRoutines('viki', '^\*\+\s', '')
 

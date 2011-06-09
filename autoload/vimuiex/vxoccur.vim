@@ -170,14 +170,10 @@ function s:PattVim2Grep(pattern)
    return join(newpatt, '')
 endfunc
 
-" Two possibilities:
-"    grep -r -n -H -i -e "else" * --include=*.sh"
-"    find . -name "*.sh" | xargs grep -n -H -i -e "else"
-"    -> find-xargs-grep is a lot faster
-function s:GrepFiles(word, range)
+function! s:PrepareGrepParams(word, range)
    let filter = split(a:range)
    let type = filter[0]
-   let options = ['', '-s', '-n', '-i', '--with-filename', '--max-count=' . g:vxoccur_match_limit]
+   let options = ['', '-s', '-n', '-i', '--max-count=' . g:vxoccur_match_limit]
    let recurse = 0
 
    let saveic=&ignorecase
@@ -224,39 +220,143 @@ function s:GrepFiles(word, range)
    endif
    let &ignorecase = saveic
 
+   let rv = {}
+   let rv.type = type
+   let rv.directory = dir
+   let rv.filter = filter
+   let rv.options = options
+   let rv.recurse = recurse
+   let rv.pattern = pattern
+   return rv
+endfunc
+
+" Two possibilities:
+"    grep -r -n -H -i -e "else" * --include=*.sh"
+"    find . -name "*.sh" | xargs grep -n -H -i -e "else"
+"    -> find-xargs-grep is a lot faster
+function! s:GrepFiles(word, range)
+   let gpar = s:PrepareGrepParams(a:word, a:range)
+   call add(gpar.options, '--with-filename')
+
    let cmd = ''
-   if g:vxoccur_grep_mode == 1 || (g:vxoccur_grep_mode == 2 && ! recurse)
-      if recurse 
-         call add(options, '-r')
-         for af in filter
+   if g:vxoccur_grep_mode == 1 || (g:vxoccur_grep_mode == 2 && ! gpar.recurse)
+      if gpar.recurse
+         call add(gpar.options, '-r')
+         for af in gpar.filter
             if af != '*'
-               call add(options, '--include=' . shellescape(af))
+               call add(gpar.options, '--include=' . shellescape(af))
             endif
          endfor
-         let filter = [dir . '/*'] 
+         let gpar.filter = [gpar.directory . '/*'] 
       else
          let xf = []
-         for af in filter
-            call add(xf, dir . '/' . af)
+         for af in gpar.filter
+            call add(xf, gpar.directory . '/' . af)
          endfor
-         let filter = xf
+         let gpar.filter = xf
       endif
-      let cmd = g:Grep_Path . ' ' . join(options, ' ') . ' ' . join(filter, ' ')
+      let cmd = g:Grep_Path . ' ' . join(gpar.options, ' ') . ' ' . join(gpar.filter, ' ')
    elseif g:vxoccur_grep_mode == 2
       " precond: recurse = true, otherwise mode 1 is used
-         let xf = []
-         for af in filter
-            call add(xf, '-name ' . shellescape(af))
-         endfor
-         let filter = xf
-         let cmd = g:Grep_Find_Path . ' ' . dir . ' ' . join(filter, ' -o ') . ' | ' 
-                  \ . g:Grep_Xargs_Path . ' ' . g:Grep_Path . ' ' . join(options, ' ')
+      let xf = []
+      for af in gpar.filter
+         call add(xf, '-name ' . shellescape(af))
+      endfor
+      let gpar.filter = xf
+      let cmd = g:Grep_Find_Path . ' ' . gpar.directory . ' ' . join(gpar.filter, ' -o ') . ' | ' 
+               \ . g:Grep_Xargs_Path . ' ' . g:Grep_Path . ' ' . join(gpar.options, ' ')
    endif
    if len(cmd) > 0
       let cmd_out = system(cmd)
       cgetexpr cmd_out
       let [dummy, s:capture] = vimuiex#vxquickfix#TransformQfItems(getqflist())
    endif
+endfunc
+
+" NOTE: this is a test for the popuplist() function.
+" In phase 1 all the filenames are found.
+" In phase 2 the grep results are added to the list incrementally (in
+" GrepFileIncr_cb).
+function! s:GrepFilesIncr(word, range, title)
+   if !has('popuplist')
+      let s:capture = ['The feature +popuplist is not available.', 'Aborting the search.']
+      call s:VxShowCapture('VxOccur', 'VxOccur, mode 3', 0)
+      return
+   endif
+
+   let gpar = s:PrepareGrepParams(a:word, a:range)
+   call add(gpar.options, '--with-filename')
+
+   let xf = []
+   for af in gpar.filter
+      call add(xf, '-name ' . shellescape(af))
+   endfor
+   let gpar.filter = xf
+   let cmd = g:Grep_Find_Path . ' ' . gpar.directory . ' ' . join(gpar.filter, ' -o ')
+   let s:FileList = split(system(cmd), "\n")
+   let s:FileListPos = 0
+   let s:FileListGrep = g:Grep_Path . ' ' . join(gpar.options, ' ')
+   let s:FileListCount = 0
+
+   let s:capture = []
+   let cmds = { 'process-file': s:SNR . 'GrepFileIncr_cb' }
+   let opts = {}
+   let opts.commands = cmds
+   let opts.nextcmd = 'process-file'
+   let opts.titles = '/' 
+   let opts.highlight = a:word
+   let rv = popuplist(s:capture, a:title, opts)
+   if rv.status == 'accept'
+      call s:SelectItem_cb(rv.current)
+   endif
+   " TODO: save items in history
+endfunc
+
+function! s:StatusMsg(str)
+   " XXX: Unfortunately this causes "Press ENTER" to appear on exit.
+   " echon printf("\r%*s", -(&columns-4), a:str)[: &columns-4]
+endfunc
+
+function! s:GrepFileIncr_cb(command, state)
+   if s:FileListPos >= len(s:FileList) " || len(a:state.items) > g:vxoccur_match_limit
+      call s:StatusMsg('Found ' . s:FileListCount . ' matches in ' . len(s:FileList) . ' files.')
+      return { 'nextcmd': 'auto-resize', 'redraw': 1 }
+   endif
+   let batch = 30 " TODO: make this an option, eg. g:vxoccur_grep_batch_size
+   let pos = s:FileListPos
+   call s:StatusMsg(s:FileList[pos])
+   let fns = s:FileList[pos : pos+batch]
+   call map(fns, 'shellescape(v:val)')
+   let cmd = s:FileListGrep . ' ' . join(fns, ' ')
+   let matches = split(system(cmd), "\n")
+   let s:FileListPos = s:FileListPos + batch
+
+   let rv = { 'nextcmd': 'process-file' }
+   if len(matches) > 0
+      " GREP matches are in form: ^filename:linenumber:line$
+      call map(matches, 'matchlist(v:val, ''^\(.\{-}\):\(\d\+\):\(.*\)$'')')
+      let items = []
+      let prevfn = ''
+      for it in matches
+         if len(it) < 4
+            continue
+         endif
+         let s:FileListCount = s:FileListCount + 1
+         if prevfn != it[1]
+            call add(items, it[1])
+            let prevfn = it[1]
+         endif
+         let s = printf('%2d: %3s  %s', s:FileListCount, it[2], it[3])
+         call add(items, s)
+      endfor
+      if len(items) > 0
+         let rv.additems = items
+      endif
+      if len(a:state.items) < &lines
+         let rv.nextcmd = 'process-file|auto-resize'
+      endif
+   endif
+   return rv
 endfunc
 
 " Prepares and executes a vimgrep command
@@ -319,7 +419,7 @@ function! s:VimGrepBuffers(word, range)
          let bufnr = bufnr('%')
       endwhile
    endif
-   
+
    silent exec "buffer " . curbuf
 endfunc
 
@@ -344,12 +444,15 @@ function! vimuiex#vxoccur#VxOccur()
    if range == '' | return | endif
 
    if match(range[0], '\C[dDwW]') >= 0
+      let title = 'Vimgrep: ' . s:capWord
       if g:vxoccur_grep_mode == 0
          call s:VimGrepFiles(s:capWord, range)
+      elseif g:vxoccur_grep_mode == 3
+         call s:GrepFilesIncr(s:capWord, range, title)
+         return
       else
          call s:GrepFiles(s:capWord, range)
       endif
-      let title = 'Vimgrep: ' . s:capWord
    else
       call s:VimGrepBuffers(s:capWord, range)
       if range[0] ==# 'b'
@@ -446,12 +549,15 @@ function! vimuiex#vxoccur#VxSourceTasks()
    if range == '' | return | endif
 
    if match(range[0], '\C[dDwW]') >= 0
+      let title = 'Tasks in Source (vimgrep)'
       if g:vxoccur_grep_mode == 0
          call s:VimGrepFiles('\C' . join(g:vxoccur_task_words, '\|'), range)
+      elseif g:vxoccur_grep_mode == 3
+         call s:GrepFilesIncr('\C' . join(g:vxoccur_task_words, '\|'), range, title)
+         return
       else
          call s:GrepFiles('\C' . join(g:vxoccur_task_words, '\|'), range)
       endif
-      let title = 'Tasks in Source (vimgrep)'
    else
       let s:capMatch = '\C' . join(g:vxoccur_task_words, '\|')
       call s:VimGrepBuffers(s:capMatch, range)
@@ -590,7 +696,8 @@ function! s:VxShowCapture(occurType, title, ...)
    endif
 
    if has('popuplist')
-      let opts = { 'titles': '/' } " TODO: set a regexp when popuplist supports it
+      let opts = { 'titles': '/' }
+      let opts.highlight = s:capWord
       let rslt = popuplist(items, a:title, opts)
       if rslt.status == 'accept'
          call s:SelectItem_cb(rslt.current)
