@@ -320,7 +320,11 @@ endfunc
 function! s:GrepFileIncr_cb(command, state)
    if s:FileListPos >= len(s:FileList) " || len(a:state.items) > g:vxoccur_match_limit
       call s:StatusMsg('Found ' . s:FileListCount . ' matches in ' . len(s:FileList) . ' files.')
-      return { 'nextcmd': 'auto-resize', 'redraw': 1 }
+      let rv = { 'nextcmd': 'auto-resize', 'redraw': 1 }
+      if s:FileListCount < 1
+         let rv.additems = [ 'No matching lines were found.' ]
+      endif
+      return rv
    endif
    let batch = 30 " TODO: make this an option, eg. g:vxoccur_grep_batch_size
    let pos = s:FileListPos
@@ -346,7 +350,7 @@ function! s:GrepFileIncr_cb(command, state)
             call add(items, it[1])
             let prevfn = it[1]
          endif
-         let s = printf('%2d: %3s  %s', s:FileListCount, it[2], it[3])
+         let s = printf(' %3d: %3s  %s', s:FileListCount, it[2], it[3])
          call add(items, s)
       endfor
       if len(items) > 0

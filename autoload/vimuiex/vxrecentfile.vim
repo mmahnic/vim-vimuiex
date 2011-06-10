@@ -57,7 +57,7 @@ endfunc
 
 function! vimuiex#vxrecentfile#VxOpenRecentFile()
    if has('popuplist')
-      let rslt=popuplist(s:GetRecentFiles(), 'Recent Files')
+      let rslt=popuplist(s:GetRecentFiles(), 'Recent Files', {'columns': 1})
       if rslt.status == 'accept'
          call s:SelectFile_cb(rslt.current, '')
       endif

@@ -224,6 +224,7 @@ have one of the following values:
    0 - use internal vimgrep (default)
    1 - use grep (-r)
    2 - use the combination find + xargs + grep
+   3 - use the combination find + grep and build the list incrementally
 
 The external programs can be set using the following variables (originally
 used by vimscript#311 grep.vim):

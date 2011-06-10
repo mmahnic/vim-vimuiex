@@ -78,7 +78,8 @@ function! vimuiex#vxwatch#VxWatch(variable, title)
             \   'normal': { '<backspace>': 'done:go-up' },
             \ },
             \ 'mode': 'normal',
-            \ 'current': 0
+            \ 'current': 0,
+            \ 'columns': 1
             \ }
    let stack = [ [a:variable, s:MakeItems(a:variable), 0, a:title] ]
    let spos = 0

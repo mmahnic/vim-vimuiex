@@ -3,7 +3,7 @@
 "
 " Author: Marko Mahnič
 " Created: April 2009
-" Changed: June 2009
+" Changed: June 2011
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
 "
@@ -129,13 +129,81 @@ function! s:ReloadBufferList()
    exec 'python BufList.loadVimItems("' . s:SNR . 'GetBufferList()")'
 endfunc
 
+function! s:PulsBuferList_delete_cb(command, state)
+endfunc
+
+function! s:PulsBuferList_select_cb(command, state)
+   let cmd = a:command
+   if cmd == 'tabopen' | let cmd = 't'
+   elseif cmd == 'split' | let cmd = 's'
+   elseif cmd == 'vsplit' | let cmd = 'v'
+   else | let cmd = ''
+   endif
+   if cmd == 't'
+      call s:SelectBuffer_cb(a:state.current, cmd)
+   else
+      call s:SelectMarkedBuffers_cb(a:state.marked, a:state.current, cmd)
+   endif
+endfunc
+
+function! s:PulsBuferList_display_cb(command, state)
+   let cmd = a:command
+   if cmd == 'sort'
+      let s:bufOrder = (s:bufOrder + 1) % len(s:bufOrderDef)
+      " The list may be sorted with a key that is not part of the displayed
+      " value so we have to rebuild the list.
+   else if cmd == 'toggle-unlisted'
+      let s:showUnlisted = s:showUnlisted ? 0 : 1
+   else
+      return
+   endif
+   " let a:state.items = s:GetBufferList()
+   " TODO: popuplist doesn't detect the new list in a:state.items!
+   " We should return the new items in result.items
+   " TODO: add the field result.title in popuplst.c
+   return { 'nextcmd': 'auto-resize', 'items': s:GetBufferList() }
+endfunc
+
+" Manage the buffers with VimScript instead of the builtin 'buffers' provider.
+" The items are stored in a list may be modified while the listbox is active.
+function! s:PulsBuferList()
+   let items = s:GetBufferList()
+   let cbsel = s:SNR . 'PulsBuferList_select_cb'
+   let cbrem = s:SNR . 'PulsBuferList_delete_cb'
+   let cbdis = s:SNR . 'PulsBuferList_display_cb'
+   let cmds = {
+            \ 'bdelete': cbrem, 'bwipeout': cbrem,
+            \ 'split': cbsel, 'vsplit': cbsel, 'tabopen': cbsel,
+            \ 'sort': cbdis, 'toggle-unlisted': cbdis
+            \ }
+   let kmaps = {}
+   let kmaps['normal'] = { 
+            \ 'xd': 'bdelete', 'xw': 'bwipeout',
+            \ 'gs': 'split|done:split', 'gv': 'vsplit|done:vsplit', 'gt': 'tabopen|done:tabopen',
+            \ 'ou': 'toggle-unlisted', 'os': 'sort',
+            \ '<s-cr>': 'accept:tabopen'
+            \}
+   let opts = { 'commands': cmds, 'keymap': kmaps, 'columns': 1, 'current': 1 }
+   let rslt = popuplist(items, 'Buffers', opts)
+   if rslt.status == 'accept'
+      call vxlib#cmd#GotoBuffer(0 + rslt.current, '')
+   elseif rslt.status == 'accept:tabopen'
+      PulsBuferList_select_cb('tabopen', rslt)
+   endif
+endfunc
+
 function! vimuiex#vxbuflist#VxBufListSelect()
    if has('popuplist')
-      let rslt = popuplist('buffers', 'Buffers', { 
-               \ 'mru-list': g:VxPluginVar.vxbuflist_mru, 'sort': 'r',
-               \ 'current': 1 } )
-      if rslt.status == 'accept'
-         call vxlib#cmd#GotoBuffer(0 + rslt.current, '')
+      if ! g:vxbuflist_use_internal
+         call s:PulsBuferList()
+      else
+         " use the internal buffer provider
+         let rslt = popuplist('buffers', 'Buffers', { 
+                  \ 'mru-list': g:VxPluginVar.vxbuflist_mru, 'sort': 'r',
+                  \ 'current': 1 } )
+         if rslt.status == 'accept'
+            call vxlib#cmd#GotoBuffer(0 + rslt.current, '')
+         endif
       endif
       return
    endif
@@ -174,6 +242,7 @@ endfunc
 finish
 
 " <VIMPLUGIN id="vimuiex#vxbuflist" require="popuplist||python&&(!gui_running||python_screen)">
+   call s:CheckSetting('g:vxbuflist_use_internal', '0')
    let g:VxPluginVar.vxbuflist_mru = []
    function s:VIMUIEX_buflist_pushBufNr(nr)
       " mru code adapted from tlib#buffer
