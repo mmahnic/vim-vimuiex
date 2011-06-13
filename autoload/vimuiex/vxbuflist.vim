@@ -129,7 +129,27 @@ function! s:ReloadBufferList()
    exec 'python BufList.loadVimItems("' . s:SNR . 'GetBufferList()")'
 endfunc
 
+
 function! s:PulsBuferList_delete_cb(command, state)
+   let rmbfs = []
+   if len(a:state.marked) > 0
+      for nr in a:state.marked
+         call add(rmbfs, s:bufnumbers[nr])
+      endfor
+   else
+      call add(rmbfs, s:bufnumbers[a:state.current])
+   endif
+   if len(rmbfs) < 1
+      return
+   endif
+   for nr in rmbfs
+      exec a:command . ' ' . nr
+   endfor
+   unlockvar 1 a:state.items
+   call remove(a:state.items, 0, len(a:state.items)-1)
+   call extend(a:state.items, s:GetBufferList())
+   lockvar 1 a:state.items
+   return { 'nextcmd': 'auto-resize', 'redraw': 1 }
 endfunc
 
 function! s:PulsBuferList_select_cb(command, state)
@@ -152,16 +172,21 @@ function! s:PulsBuferList_display_cb(command, state)
       let s:bufOrder = (s:bufOrder + 1) % len(s:bufOrderDef)
       " The list may be sorted with a key that is not part of the displayed
       " value so we have to rebuild the list.
-   else if cmd == 'toggle-unlisted'
+   elseif cmd == 'toggle-unlisted'
       let s:showUnlisted = s:showUnlisted ? 0 : 1
    else
       return
    endif
-   " let a:state.items = s:GetBufferList()
-   " TODO: popuplist doesn't detect the new list in a:state.items!
-   " We should return the new items in result.items
-   " TODO: add the field result.title in popuplst.c
-   return { 'nextcmd': 'auto-resize', 'items': s:GetBufferList() }
+
+   " The list is locked, the items are not.
+   " We have to manipulate the list with remove/extend.
+   " If we assign to a:state.items, a new list is created, which is unknown to
+   " popuplist().
+   unlockvar 1 a:state.items
+   call remove(a:state.items, 0, len(a:state.items)-1)
+   call extend(a:state.items, s:GetBufferList())
+   lockvar 1 a:state.items
+   return { 'nextcmd': 'auto-resize', 'title': s:GetTitle(), 'redraw': 1 }
 endfunc
 
 " Manage the buffers with VimScript instead of the builtin 'buffers' provider.
@@ -184,11 +209,12 @@ function! s:PulsBuferList()
             \ '<s-cr>': 'accept:tabopen'
             \}
    let opts = { 'commands': cmds, 'keymap': kmaps, 'columns': 1, 'current': 1 }
-   let rslt = popuplist(items, 'Buffers', opts)
+   let rslt = popuplist(items, s:GetTitle(), opts)
    if rslt.status == 'accept'
-      call vxlib#cmd#GotoBuffer(0 + rslt.current, '')
+      " call vxlib#cmd#GotoBuffer(0 + rslt.current, '')
+      call s:PulsBuferList_select_cb('open', rslt)
    elseif rslt.status == 'accept:tabopen'
-      PulsBuferList_select_cb('tabopen', rslt)
+      call s:PulsBuferList_select_cb('tabopen', rslt)
    endif
 endfunc
 
