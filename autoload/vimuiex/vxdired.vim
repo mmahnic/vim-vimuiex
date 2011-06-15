@@ -103,16 +103,6 @@ function! s:LsSplit(val)
    return rv
 endfunc
 
-function! s:LsModify(val)
-   let pls = s:LsSplit(a:val)
-   if pls.directory
-      let flags = '+ ' . pls.flags
-   else
-      let flags = '  ' . pls.flags
-   endif
-   return join([flags, pls.date, pls.time, pls.size, pls.filename], ' ')
-endfunc
-
 function! s:LsExec(dir)
    let cmd = '!ls -hal --group-directories-first ' . a:dir
    if has('gui_running')
@@ -123,28 +113,104 @@ function! s:LsExec(dir)
    return files[2:]
 endfunc
 
+function! s:LsRealFilename(dir, lsSplit)
+   let sep = '/'
+   let fname = a:lsSplit.filename
+   if a:lsSplit.symlink
+      let fp = split(fname, '\s\+->\s\+')
+      if len(fp) == 2
+         if fp[1][0] == sep
+            return fp[1]
+         else
+            return a:dir . sep . fp[1]
+         endif
+      endif
+   endif
+   if fname == '.'
+      return a:dir
+   elseif fname == '..'
+      return fnamemodify(a:dir, ':p:h:h')
+   endif
+   return a:dir . sep . a:lsSplit.filename
+endfunc
+
+" 'done:go-up' and 'accept'(..) behave differently on symlinked directories.
+" 'done:go-up' will move back in history
+" 'accept'(..) will move to the parent of the current directory; if the newly
+"              entered directory is in history, the history will be truncated
+"              at that point.
 function! s:SimplePosixBrowse()
    let dir = s:GetStartupDir()
    let opts = {
             \ 'keymap': { 'normal': { '<backspace>': 'done:go-up' }},
             \ 'mode': 'normal'
             \ }
+   let dirstack = []    " list of (directory, current)
+   let nametofind = ''  " name to highlight when moving up to a dir that is not in history
    while 1
       let files = s:LsExec(dir)
-      let disp = copy(files)
-      call map(disp, 's:LsModify(v:val)')
+      let disp = []
+      let index = (nametofind == '') ? 0 : -1
+      for fname in files
+         let pls = s:LsSplit(fname)
+         if pls.directory
+            let flags = '+ ' . pls.flags
+         else
+            let flags = '  ' . pls.flags
+         endif
+         call add(disp,  join([flags, pls.date, pls.time, pls.size, pls.filename], ' '))
+         if index < 0 && pls.filename == nametofind
+            let index = len(disp) - 1
+         endif
+      endfor
 
+      if nametofind != ''
+         let opts.current = index
+      endif
       let rv = popuplist(disp, "File Browser: " . dir, opts)
       if rv.status == 'done:go-up'
-         let dir = fnamemodify(dir, ':p:h:h') " parent directory
+         if len(dirstack) < 1
+            let nametofind = fnamemodify(dir, ':t')
+            let dir = fnamemodify(dir, ':p:h:h') " parent directory
+         else
+            let dirinfo = remove(dirstack, -1) " directory in history
+            let dir = dirinfo[0]
+            let nametofind = ''
+            let opts.current = dirinfo[1]
+         endif
          let opts.mode = rv.mode
       elseif rv.status == 'accept'
          if rv.current > 0 && rv.current < len(files)
             let pls = s:LsSplit(files[rv.current])
+            let pls.realfilename = s:LsRealFilename(dir, pls)
+            if pls.symlink
+               let pls.directory = getftype(pls.realfilename) == 'dir'
+            endif
             if pls.directory
-               let dir = dir . '/' . pls.filename
+               let opts.current = 0
+               let nametofind = ''
+               if pls.filename == '..'
+                  let nametofind = fnamemodify(dir, ':t')
+                  let dir = pls.realfilename
+                  let idx = len(dirstack) - 1
+                  while idx >= 0
+                     if dirstack[idx][0] == dir
+                        break
+                     endif
+                     let idx = idx - 1
+                  endwhile
+                  if idx >= 0
+                     let nametofind = ''
+                     let opts.current = dirstack[idx][1]
+                     call remove(dirstack, idx, len(dirstack)-1)
+                  endif
+               elseif pls.filename != '.'
+                  call add(dirstack, [dir, rv.current])
+                  let dir = pls.realfilename
+                  let nametofind = '..'
+               endif
             else
-               call s:OpenFile_cb(dir . '/' . pls.filename, '')
+               call s:OpenFile_cb(pls.realfilename, '')
                break
             endif
          endif
