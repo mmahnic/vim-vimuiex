@@ -1,5 +1,5 @@
 " vim:set fileencoding=utf-8 sw=3 ts=3 et
-" vxquickfix.vim - display quickfixlist or locationlist in a popup buffer 
+" vxquickfix.vim - display quickfixlist or locationlist in a popup list 
 "
 " Author: Marko Mahnič
 " Created: January 2010
@@ -57,10 +57,7 @@ endfunc
 " TODO: Add preview (like vxoccur)
 function! vimuiex#vxquickfix#VxQuickFix()
    if has('popuplist')
-      let rslt = popuplist(s:GetQuickfixItems(), 'Quickfix List')
-      if rslt.status == 'accept'
-         call s:SelectQfItem_cb(rslt.current)
-      endif
+      let rslt = popuplist('quickfix', 'Quick Fix')
    else
       call vimuiex#vxlist#VxPopup(s:GetQuickfixItems(), "Quickfix List", {
                \ 'optid': 'VxQuickFix',
@@ -68,4 +65,26 @@ function! vimuiex#vxquickfix#VxQuickFix()
                \ })
    endif
 endfunc
+
+function! vimuiex#vxquickfix#VxQuickFixPuls(mode)
+   " TODO: mode=='select': display a menu with all available error lists / loaction lists
+   if has('popuplist')
+      if a:mode == 'lopen' || a:mode == 'copen'
+         let rslt = popuplist(a:mode)
+      else
+         let rslt = popuplist('quickfix')
+      endif
+   endif
+endfunc
+
+" =========================================================================== 
+" Global Initialization - Processed by Plugin Code Generator
+" =========================================================================== 
+finish
+
+
+" <VIMPLUGIN id="vimuiex#vxquickfix" require="popuplist">
+   command VxQfErrors call vimuiex#vxquickfix#VxQuickFixPuls('copen')
+   command VxQfLocations call vimuiex#vxquickfix#VxQuickFixPuls('lopen')
+" </VIMPLUGIN>
 
