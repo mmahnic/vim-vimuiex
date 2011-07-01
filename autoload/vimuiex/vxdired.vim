@@ -139,12 +139,19 @@ endfunc
 " 'accept'(..) will move to the parent of the current directory; if the newly
 "              entered directory is in history, the history will be truncated
 "              at that point.
-function! s:SimplePosixBrowse()
-   let dir = s:GetStartupDir()
+function! s:SimplePosixBrowse(startDir, xopts)
+   let dir = a:startDir
    let opts = {
-            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up' }},
+            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up', '*': 'done:use-filter' }},
             \ 'mode': 'normal'
             \ }
+   for k in keys(a:xopts)
+      if k[0] != '_'
+         let opts[k] = a:xopts[k]
+      endif
+   endfor
+   " repeat: set to 1 by 'done:use-filter' so that browsing will be repeated after this function exits
+   let repeat = 0
    let dirstack = []    " list of (directory, current)
    let nametofind = ''  " name to highlight when moving up to a dir that is not in history
    while 1
@@ -179,6 +186,12 @@ function! s:SimplePosixBrowse()
             let opts.current = dirinfo[1]
          endif
          let opts.mode = rv.mode
+      elseif rv.status == 'done:use-filter'
+         let a:xopts.mode = rv.mode
+         let a:xopts._browse_mode = 'filter'
+         let a:xopts._dir = dir
+         let repeat = 1
+         break
       elseif rv.status == 'accept'
          if rv.current > 0 && rv.current < len(files)
             let pls = s:LsSplit(files[rv.current])
@@ -219,6 +232,7 @@ function! s:SimplePosixBrowse()
          break
       endif
    endwhile
+   return repeat
 endfunc
 
 function! s:FindSplit(val)
@@ -270,12 +284,19 @@ function! s:FindExec(dir)
    return files[1:]
 endfunc
 
-function! s:SimplePosixFilter()
-   let dir = s:GetStartupDir()
+function! s:SimplePosixFilter(startDir, xopts)
+   let dir = a:startDir
    let opts = {
-            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up' }},
+            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up', '*': 'done:use-browse' }},
             \ 'mode': 'filter'
             \ }
+   for k in keys(a:xopts)
+      if k[0] != '_'
+         let opts[k] = a:xopts[k]
+      endif
+   endfor
+   " repeat: set to 1 by 'done:use-browse' so that browsing will be repeated after this function exits
+   let repeat = 0
    while 1
       let files = s:FindExec(dir)
       let disp = copy(files)
@@ -285,6 +306,12 @@ function! s:SimplePosixFilter()
       if rv.status == 'done:go-up'
          let dir = fnamemodify(dir, ':p:h:h') " parent directory
          let opts.mode = rv.mode
+      elseif rv.status == 'done:use-browse'
+         let a:xopts.mode = rv.mode
+         let a:xopts._browse_mode = 'browse'
+         let a:xopts._dir = dir
+         let repeat = 1
+         break
       elseif rv.status == 'accept'
          if rv.current > 0 && rv.current < len(files)
             let pls = s:FindSplit(files[rv.current])
@@ -300,6 +327,7 @@ function! s:SimplePosixFilter()
          break
       endif
    endwhile
+   return repeat
 endfunc
 
 " The file browser uses an internal command 'list:dired-select' to open
@@ -312,11 +340,17 @@ endfunc
 "     'filter' - show directory tree, filter mode
 function! vimuiex#vxdired#VxFileBrowser(mode)
    if has('popuplist')
-      if a:mode == 'browse'
-         call s:SimplePosixBrowse()
-      elseif a:mode == 'filter'
-         call s:SimplePosixFilter()
-      endif
+      let opts = { '_browse_mode': a:mode, '_dir': s:GetStartupDir() }
+      let repeat = 1
+      while repeat
+         if opts._browse_mode == 'browse'
+            let repeat = s:SimplePosixBrowse(opts._dir, opts)
+         elseif opts._browse_mode == 'filter'
+            let repeat = s:SimplePosixFilter(opts._dir, opts)
+         else
+            let repeat = 0
+         endif
+      endwhile
       return
    endif
    exec 'python def SNR(s): return s.replace("$SNR$", "' . s:SNR . '")'

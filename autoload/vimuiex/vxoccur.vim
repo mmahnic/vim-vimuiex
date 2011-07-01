@@ -267,6 +267,10 @@ function! s:GrepFiles(word, range)
                \ . g:Grep_Xargs_Path . ' ' . g:Grep_Path . ' ' . join(gpar.options, ' ')
    endif
    if len(cmd) > 0
+      if 0 " XXX: debugging
+         let g:VxOccurGrepParams = gpar
+         let g:VxOccurGrepParams["command"] = cmd
+      endif
       let cmd_out = system(cmd)
       cgetexpr cmd_out
       let [dummy, s:capture] = vimuiex#vxquickfix#TransformQfItems(getqflist())
