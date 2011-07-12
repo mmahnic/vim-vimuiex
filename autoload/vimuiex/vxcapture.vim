@@ -15,7 +15,6 @@ endif
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-" call vxlib#python#prepare()
 exec vxlib#plugin#MakeSID()
 let s:captured = []
 " =========================================================================== 
@@ -115,11 +114,6 @@ function! s:RunRegMacro_cb_p(state)
    " endif
 endfunc
 
-"function! s:InitRegistersList(pyListName)
-"   exec 'python ' . a:pyListName . '.keymapNorm.setKey(r"@", "vim:' . s:SNR . 'RunRegMacro_cb({{i}})")'
-"endfunc
-" 'init': s:SNR . 'InitRegistersList',
-
 function! vimuiex#vxcapture#VxDisplay()
    if has('popuplist')
       let rslt = popuplist(s:GetRegisterList(), 'Registers', {
@@ -137,6 +131,59 @@ function! vimuiex#vxcapture#VxDisplay()
                \ 'keymap': [
                \ ['@', 'vim:' . s:SNR . 'RunRegMacro_cb({{i}})']
                \  ]
+               \ })
+   endif
+endfunc
+
+" ------------ Tag Stack ---------------
+function! s:GetTagList()
+   let tags = vxlib#cmd#Capture('tags', 1)
+   call filter(tags, 'v:val =~ "^[ >]" ')
+   let s:captured = map(copy(tags),  'matchstr(v:val, ''^\zs\([ >]\+[0-9]\+\)\|\(>\)\ze'')')
+   let s:current = 0
+   let j = 0
+   for l in s:captured
+      if l[0] == '>'
+         let s:current = j
+         break
+      endif
+      let j = j + 1
+   endfor
+   if s:captured[-1] !~ '^\s*>\s*$'
+      call add(tags, '       [top]')
+      call add(s:captured, '')
+   else
+      let tags[-1] = '>      [top]'
+   endif
+   return tags
+endfunc
+
+function! s:SelectItem_tags(index)
+   let delta = a:index - s:current
+   if delta > 0
+      let cmd = delta . "tag"
+   else
+      let cmd = -delta . "pop"
+   endif
+   try
+      exec cmd
+   catch /:E\d\+:/
+      echo v:exception
+   endtry
+endfunc
+
+function! vimuiex#vxcapture#VxTags()
+   if has('popuplist')
+      let rslt = popuplist(s:GetTagList(), 'Tag Stack', {
+               \ 'titles': '  #',
+               \ 'current': s:current
+               \ })
+      if rslt.status == 'accept'
+         call s:SelectItem_tags(rslt.current)
+      endif
+   else
+      call vimuiex#vxlist#VxPopup(s:GetTagList(), 'Tag Stack', {
+               \ 'callback': s:SNR . 'SelectItem_tags({{i}})',
                \ })
    endif
 endfunc
@@ -164,6 +211,7 @@ finish
    command -nargs=+ -complete=command VxCmd call vimuiex#vxcapture#VxCmd_QArgs(<q-args>)
    command VxMarks call vimuiex#vxcapture#VxMarks()
    command VxDisplay call vimuiex#vxcapture#VxDisplay()
+   command VxTags call vimuiex#vxcapture#VxTags()
    command -nargs=+ VxMan call vimuiex#vxcapture#VxMan_QArgs(<q-args>)
    nmap <silent><unique> <Plug>VxMarks :VxMarks<cr>
    imap <silent><unique> <Plug>VxMarks <Esc>:VxMarks<cr>
@@ -171,5 +219,8 @@ finish
    nmap <silent><unique> <Plug>VxDisplay :VxDisplay<cr>
    imap <silent><unique> <Plug>VxDisplay <Esc>:VxDisplay<cr>
    vmap <silent><unique> <Plug>VxDisplay :<c-u>VxDisplay<cr>
+   nmap <silent><unique> <Plug>VxTagStack :VxTags<cr>
+   imap <silent><unique> <Plug>VxTagStack <Esc>:VxTags<cr>
+   vmap <silent><unique> <Plug>VxTagStack :<c-u>VxTags<cr>
 " </VIMPLUGIN>
 
