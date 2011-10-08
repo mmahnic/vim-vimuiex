@@ -296,7 +296,13 @@ function! s:GrepFilesIncr(word, range, title)
       call add(xf, '-name ' . shellescape(af))
    endfor
    let gpar.filter = xf
-   let cmd = g:Grep_Find_Path . ' ' . gpar.directory . ' ' . join(gpar.filter, ' -o ')
+   let find_opts = []
+   if ! gpar.recurse
+      call add(find_opts, '-maxdepth 1')
+   endif
+   let cmd = g:Grep_Find_Path . ' ' . gpar.directory . ' ' . join(find_opts, ' ') 
+            \ . ' ' . join(gpar.filter, ' -o ')
+   echom cmd
    let s:FileList = split(system(cmd), "\n")
    let s:FileListPos = 0
    let s:FileListGrep = g:Grep_Path . ' ' . join(gpar.options, ' ')
@@ -313,7 +319,11 @@ function! s:GrepFilesIncr(word, range, title)
    if rv.status == 'accept'
       call s:SelectItem_cb(rv.current)
    endif
-   " TODO: save items in history
+
+   let histItem = s:NewHistItem('VxOccur', 'Vimgrep: ' . a:word, s:capture)
+   let histItem.current = rv.current
+   " let histItem.filter = rv.state.filter " NOT THERE
+   call s:AddToHistory(histItem)
 endfunc
 
 function! s:StatusMsg(str)
@@ -330,7 +340,7 @@ function! s:GrepFileIncr_cb(command, state)
       endif
       return rv
    endif
-   let batch = 30 " TODO: make this an option, eg. g:vxoccur_grep_batch_size
+   let batch = 20 " TODO: make this an option, eg. g:vxoccur_grep_batch_size
    let pos = s:FileListPos
    call s:StatusMsg(s:FileList[pos])
    let fns = s:FileList[pos : pos+batch]
@@ -706,6 +716,7 @@ function! s:VxShowCapture(occurType, title, ...)
    if has('popuplist')
       let opts = { 'titles': '/' }
       let opts.highlight = s:capWord
+      let opts.current = current
       let rslt = popuplist(items, a:title, opts)
       if rslt.status == 'accept'
          call s:SelectItem_cb(rslt.current)
