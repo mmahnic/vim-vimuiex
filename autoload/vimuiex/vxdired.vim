@@ -142,7 +142,9 @@ endfunc
 function! s:SimplePosixBrowse(startDir, xopts)
    let dir = a:startDir
    let opts = {
-            \ 'keymap': { 'normal': { '<backspace>': 'done:go-up', '*': 'done:use-filter' }},
+            \ 'keymap': { 'normal': {
+            \       '<backspace>': 'done:go-up', '*': 'done:use-filter', 'e': 'done:input-filename'
+            \   }},
             \ 'mode': 'normal'
             \ }
    for k in keys(a:xopts)
@@ -192,6 +194,22 @@ function! s:SimplePosixBrowse(startDir, xopts)
          let a:xopts._dir = dir
          let repeat = 1
          break
+      elseif rv.status == 'done:input-filename'
+         let wrkdir = getcwd()
+         exec "cd " . dir
+         let fn = input('From: ' . dir . "\nOpen: ", '', 'file')
+         exec "cd " . wrkdir
+         let fn = matchstr(fn, '^\s*\zs.*$')
+         if fn == ''
+            redraw
+         else
+            if fn[0] == '/'
+               exec 'edit ' . fn
+            else
+               exec 'edit ' . dir . '/' . fn
+            endif
+            break
+         endif
       elseif rv.status == 'accept'
          if rv.current > 0 && rv.current < len(files)
             let pls = s:LsSplit(files[rv.current])
