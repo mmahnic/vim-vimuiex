@@ -202,6 +202,36 @@ function! vimuiex#vxcapture#VxMan_QArgs(first)
    call vimuiex#vxcapture#VxMan(a:first . ' ' . join(args, ' '))
 endfunc
 
+" ------------ Show Spelling alternatives (z=) ---------------
+function! s:SelectItem_spell(index)
+   let word=s:captured[a:index]
+   let word=matchstr(word, '^\s*\zs[0-9]\+')
+   if word != ''
+      exec 'norm! ' . word . 'z='
+   endif
+endfunc
+
+function! vimuiex#vxcapture#VxSpellZeq()
+   " TODO: verbose displays the score
+   let s:captured = vxlib#cmd#Capture('norm! z=', 1)
+   if len(s:captured) < 1
+      return
+   endif
+   let title = s:captured[0]
+   let s:captured = s:captured[1:-2]
+   let s:captured[0] = printf('%*s', -len(title)-5, s:captured[0])
+   if has('popuplist')
+      let rslt = popuplist(s:captured, title)
+      if rslt.status == 'accept'
+         call s:SelectItem_spell(rslt.current)
+      endif
+   else
+      call vimuiex#vxlist#VxPopup(s:captured, title, {
+               \ 'callback': s:SNR . 'SelectItem_spell({{i}})',
+               \ })
+   endif
+endfunc
+
 " =========================================================================== 
 " Global Initialization - Processed by Plugin Code Generator
 " =========================================================================== 
@@ -222,5 +252,6 @@ finish
    nmap <silent><unique> <Plug>VxTagStack :VxTags<cr>
    imap <silent><unique> <Plug>VxTagStack <Esc>:VxTags<cr>
    vmap <silent><unique> <Plug>VxTagStack :<c-u>VxTags<cr>
+   nmap <silent><unique> <Plug>VxSpellZeq :call vimuiex#vxcapture#VxSpellZeq()<cr>
 " </VIMPLUGIN>
 

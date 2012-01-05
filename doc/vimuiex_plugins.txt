@@ -420,7 +420,7 @@ Note: The menu initially starts with menu shortcuts enabled. To disable them
 and enter normal listbox navigation mode, press '&'.
 
 ==============================================================================
-ENHANCE INTERNAL COMMANDS                              *vimuiex-vxcapture*
+ENHANCED INTERNAL COMMANDS                              *vimuiex-vxcapture*
 
 
 VxCmd                                            *vimuiex-vxcmd*
@@ -465,6 +465,20 @@ VxMarks						 *vimuiex-vxmarks*
 
 Displays the marks (output of the :marks command) in a popup listbox. If <CR> 
 is pressed on a valid mark, the cursor jumps to that mark.
+
+
+Plugin Mappings
+===============
+
+VxSpellZeq						 *vimuiex-vxspellzeq*
+----------
+
+A replacement for the z= command. Displays a list of spelling alternatives for
+the current word. If <CR> is pressed on a word, that word will be used instead
+of the misspelled word.
+
+To replace the default command z= use: >
+   nmap <silent> z= <Plug>VxSpellZeq
 
 
 
