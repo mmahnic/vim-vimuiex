@@ -18,8 +18,33 @@ exec vxlib#plugin#MakeSID()
 call vimuiex#vxoccur_defaults#Init()
 " =========================================================================== 
 
-" Call this if you need g:vxoccur_routine_def before VxOccurRoutines is called
+" Additional routine definitions can be added in the following two ways:
+" 1. Preferred (vxoccur will be loaded as late as possible)
+"    exec vxlib#plugin#MakeSID() " creates s:SNR
+"    if !exists('g:vxoccur_routine_plugin')
+"      let g:vxoccur_routine_plugin = []
+"    endif
+"    call add(g:vxoccur_routine_plugin, s:SNR . 'AddMyRoutines')
+"    function! s:AddMyRoutines(routines)
+"      let a:routines['mymode'] = { 'regexp': '^##' }
+"    endfunc
+"   
+" 2. Shorter - make sure g:vxoccur_routine_def is available
+"    " (will fail if vxoccur isn't installed)
+"    call vimuiex#vxoccur#CheckInit()
+"    let g:vxoccur_routine_def['mymode'] = { 'regexp': '^##' }
 function! vimuiex#vxoccur#CheckInit()
+   if !exists('g:vxoccur_routine_plugin')
+      return
+   endif
+   for plug in g:vxoccur_routine_plugin
+      try
+         exec 'call ' . plug . '(g:vxoccur_routine_def)'
+      catch /.*/
+         echom 'Errors were encountered during "' . plug . '"'
+      endtry
+   endfor
+   unlet g:vxoccur_routine_plugin
 endfunc
 
 " History of searches (keep data)
@@ -502,6 +527,7 @@ endfunc
 
 " TODO: could perform a search with range, like VxOccur
 function! vimuiex#vxoccur#VxOccurRoutines()
+   call vimuiex#vxoccur#CheckInit()
    let l:dict = g:vxoccur_routine_def
    if has_key(l:dict, &ft) != 1
       echom 'Routine regexp not defined for ft=' . &ft
