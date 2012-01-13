@@ -137,12 +137,12 @@ endfunc
 "================================================================= 
 " reStructuredText
 "================================================================= 
-let s:restTitles = []
+"let s:restTitles = []
 call s:DefRoutines('rst', '^\([-=`:''"~^_*+#<>]\)\1\+\s*$', 'vimuiex#vxoccur_defaults#ExtractRestTitle',
          \ {'init': 'vimuiex#vxoccur_defaults#InitRestTitle'} )
 
 function! vimuiex#vxoccur_defaults#InitRestTitle()
-   let s:restTitles = []
+   let b:restTitles = []
 endfun
 
 function! vimuiex#vxoccur_defaults#ExtractRestTitle()
@@ -167,10 +167,33 @@ function! vimuiex#vxoccur_defaults#ExtractRestTitle()
    if lnprev == '' | let ttype = '1' . cur[0]
    else | let ttype = '2' . cur[0]
    endif
-   let level = index(s:restTitles, ttype)
+   let level = index(b:restTitles, ttype)
    if level < 0
-      call add(s:restTitles, ttype)
-      let level = len(s:restTitles) - 1
+      call add(b:restTitles, ttype)
+      let level = len(b:restTitles) - 1
+   endif
+   return printf('%*s%s', 2*level, '', substitute(title, '^\s\+', '', 'g'))
+endfunc
+
+"================================================================= 
+" Markdown
+"================================================================= 
+call s:DefRoutines('markdown', '^\([-=]\)\1\+\s*$\|^#\+\s\+\S', 
+         \ 'vimuiex#vxoccur_defaults#ExtractMarkdownTitle')
+
+function! vimuiex#vxoccur_defaults#ExtractMarkdownTitle()
+   let lnstart = line('.')
+   let line = getline(lnstart)
+   if line =~ '^#\+\s\+\S'
+      let title = matchstr(line, '^#\+\s\+\zs\(.\+\)\ze\s*#*\s*$')
+      let level = len(matchstr(line, '^#\+\ze')) - 1
+   elseif lnstart < 2
+      return ''
+   else
+      let cur = substitute(line, '\s\+$', '', 'g')
+      let title = substitute(getline(lnstart-1), '\s\+$', '', 'g')
+      let levels = '=-'
+      let level = stridx(levels, cur[0])
    endif
    return printf('%*s%s', 2*level, '', substitute(title, '^\s\+', '', 'g'))
 endfunc
@@ -186,7 +209,6 @@ function! vimuiex#vxoccur_defaults#ExtractAsciiDocTitle()
       return ''
    endif
    let line = getline(lnstart)
-   echom "go " . line
    if line =~ '^\.\S.'
       let title = matchstr(line, '^\.\zs.*\ze\s*$')
       let level = 5
