@@ -529,17 +529,20 @@ endfunc
 function! vimuiex#vxoccur#VxOccurRoutines()
    call vimuiex#vxoccur#CheckInit()
    let l:dict = g:vxoccur_routine_def
-   if has_key(l:dict, &ft) != 1
-      echom 'Routine regexp not defined for ft=' . &ft
+   let ft = &filetype
+   let ft = matchstr(ft, '^[^\.]\+')
+   "echom "FT:" . ft
+   if has_key(l:dict, ft) != 1
+      echom 'Routine regexp not defined for ft=' . ft
    else
       let s:capture = [bufname('%')]
-      let title = 'Routines, ft=' . &ft . ', ' . expand('%:p:t')
-      let s:capMatch = l:dict[&ft].regexp
+      let title = 'Routines, ft=' . ft . ', ' . expand('%:p:t')
+      let s:capMatch = l:dict[ft].regexp
       let gcmd = 'call s:AddOccurenceLine()'
-      if has_key(l:dict[&ft], 'call') == 0
+      if has_key(l:dict[ft], 'call') == 0
          let gcmd = 'call s:AddOccurenceLine()'
       else
-         let gcmd = l:dict[&ft]['call']
+         let gcmd = l:dict[ft]['call']
          if exists('*' . gcmd)
             let gcmd = "call s:AddOccurenceLineF('" . gcmd . "')"
             " echom "VxOccurRoutines: callback=" . gcmd
@@ -549,8 +552,8 @@ function! vimuiex#vxoccur#VxOccurRoutines()
          endif
       endif
       let curpos = getpos('.')
-      if has_key(l:dict[&ft], 'init') != 0
-         let fninit = l:dict[&ft]['init']
+      if has_key(l:dict[ft], 'init') != 0
+         let fninit = l:dict[ft]['init']
          if exists('*' . fninit)
             exec "call " . fninit . "()"
          endif
@@ -867,7 +870,9 @@ endfunc
 " otherwise it will (try to) show Tags.
 function! vimuiex#vxoccur#VxOccurTaglist()
    call vimuiex#vxoccur#CheckInit()
-   if has_key(g:vxoccur_routine_def, &ft) == 1
+   let ft = &filetype
+   let ft = matchstr(ft, '^[^\.]\+')
+   if has_key(g:vxoccur_routine_def, ft) == 1
       VxOccurRoutines
    else
       VxOccurTags
