@@ -103,8 +103,15 @@ function! s:LsSplit(val)
    return rv
 endfunc
 
-function! s:LsExec(dir)
-   let cmd = '!ls -hal --group-directories-first ' . a:dir
+function! s:PyLsExec(dir)
+   call vxlib#python#prepare()
+   let cmd = "py import vxlib.vimio; vxlib.vimio.listdir('''" . a:dir . "''')"
+   let files = vxlib#cmd#Capture(cmd, 1)
+   return files
+endfunc
+
+function! s:SysLsExec(dir)
+   let cmd = '!ls -hal --time-style long-iso --group-directories-first ' . a:dir
    if has('gui_running')
       let files = vxlib#cmd#Capture(cmd, 1)
    else
@@ -112,6 +119,12 @@ function! s:LsExec(dir)
    endif
    return files[2:]
 endfunc
+
+if has('python')
+   let s:LsExec = function("s:PyLsExec")
+else
+   let s:LsExec = function("s:SysLsExec")
+endif
 
 function! s:LsRealFilename(dir, lsSplit)
    let sep = '/'
