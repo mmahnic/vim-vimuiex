@@ -272,11 +272,11 @@ function! s:GrepFiles(word, range)
                call add(gpar.options, '--include=' . shellescape(af))
             endif
          endfor
-         let gpar.filter = [gpar.directory . '/*'] 
+         let gpar.filter = [shellescape(gpar.directory . '/*')] 
       else
          let xf = []
          for af in gpar.filter
-            call add(xf, gpar.directory . '/' . af)
+            call add(xf, shellescape(gpar.directory . '/' . af))
          endfor
          let gpar.filter = xf
       endif
@@ -288,7 +288,7 @@ function! s:GrepFiles(word, range)
          call add(xf, '-name ' . shellescape(af))
       endfor
       let gpar.filter = xf
-      let cmd = g:Grep_Find_Path . ' ' . gpar.directory . ' ' . join(gpar.filter, ' -o ') . ' | ' 
+      let cmd = g:Grep_Find_Path . ' ' . shellescape(gpar.directory) . ' ' . join(gpar.filter, ' -o ') . ' | ' 
                \ . g:Grep_Xargs_Path . ' ' . g:Grep_Path . ' ' . join(gpar.options, ' ')
    endif
    if len(cmd) > 0
@@ -325,7 +325,7 @@ function! s:GrepFilesIncr(word, range, title)
    if ! gpar.recurse
       call add(find_opts, '-maxdepth 1')
    endif
-   let cmd = g:Grep_Find_Path . ' ' . gpar.directory . ' ' . join(find_opts, ' ') 
+   let cmd = g:Grep_Find_Path . ' ' . shellescape(gpar.directory) . ' ' . join(find_opts, ' ') 
             \ . ' ' . join(gpar.filter, ' -o ')
    echom cmd
    let s:FileList = split(system(cmd), "\n")
@@ -571,7 +571,7 @@ function! vimuiex#vxoccur#VxOccurTags()
    let s:capMatch = ''
    let cmd = 'ctags -f - --format=2 --excmd=pattern --fields=nks --sort=no'
    let filename = fnamemodify(bufname('%'), ':p')
-   let cmdout = system(cmd . ' ' . filename)
+   let cmdout = system(cmd . ' ' . shellescape(filename))
    let taglist = split(cmdout, "\n")
    let l:n = len(s:capture)
    for line in taglist
