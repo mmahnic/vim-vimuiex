@@ -125,8 +125,8 @@ function! s:GetSearchRange()
    else | let disp = default[:11] . ' ...'
    endif
  
-   " range: b buffer, d ... buffer directory, w ... working directory, ...
-   let range = input('Range (bdDwW)[' . disp . ']: ', '-')
+   " range: b buffer, d ... buffer directory, w ... working directory, p ... project
+   let range = input('Range (bdDwWp)[' . disp . ']: ', '-')
    call vxlib#hist#SetHistory('input', hinp)
    call inputrestore()
 
@@ -238,9 +238,10 @@ function! s:PrepareGrepParams(word, range)
 
    if type == 'd' || type == 'D' | let dir = expand('%:p:h')
    elseif type == 'w' || type == 'W' | let dir = getcwd()
+   elseif type == 'p' | let dir = s:FindProjectRoot()
    else | let dir = '.' " TODO: search globally? (extract directories from filters)
    endif
-   if type == 'W' || type == 'D'
+   if type == 'W' || type == 'D' || type == 'p'
       let recurse = 1
    endif
    let &ignorecase = saveic
@@ -252,6 +253,7 @@ function! s:PrepareGrepParams(word, range)
    let rv.options = options
    let rv.recurse = recurse
    let rv.pattern = pattern
+   echom string(rv)
    return rv
 endfunc
 
@@ -327,7 +329,7 @@ function! s:GrepFilesIncr(word, range, title)
    endif
    let cmd = g:Grep_Find_Path . ' ' . shellescape(gpar.directory) . ' ' . join(find_opts, ' ') 
             \ . ' ' . join(gpar.filter, ' -o ')
-   echom cmd
+   " echom cmd
    let s:FileList = split(system(cmd), "\n")
    let s:FileListPos = 0
    let s:FileListGrep = g:Grep_Path . ' ' . join(gpar.options, ' ')
@@ -415,9 +417,10 @@ function! s:VimGrepFiles(word, range)
    set noignorecase
    if type == 'd' || type == 'D' | let dir = '%:p:h'
    elseif type == 'w' || type == 'W' | let dir = getcwd()
+   elseif type == 'p' | let dir = s:FindProjectRoot()
    else | let dir = '.'
    endif
-   if type == 'W' || type == 'D' | let dirsep = '/**/'
+   if type == 'W' || type == 'D' || type == 'p' | let dirsep = '/**/'
    else | let dirsep = '/' | endif
    let &ignorecase = saveic
 
@@ -433,6 +436,23 @@ function! s:VimGrepFiles(word, range)
    catch /E480/
    endtry
    let [dummy, s:capture] = vimuiex#vxquickfix#TransformQfItems(getqflist())
+endfunc
+
+function s:FindProjectRoot()
+   let cwd = '%:p:h'
+   if g:vxoccur_project_file == "" 
+      return expand(cwd)
+   endif
+   let prevdir = ""
+   while expand(cwd) != prevdir
+      echom cwd . ' ' . expand(cwd)
+      if filereadable(expand(cwd) . '/' . g:vxoccur_project_file)
+         return expand(cwd)
+      endif
+      let prevdir = expand(cwd)
+      let cwd = cwd . ':h'
+   endwhile
+   return expand('%:p:h')
 endfunc
 
 function! s:VimGrepBuffers(word, range)
@@ -486,7 +506,7 @@ function! vimuiex#vxoccur#VxOccur()
    let range = s:GetSearchRange()
    if range == '' | return | endif
 
-   if match(range[0], '\C[dDwW]') >= 0
+   if match(range[0], '\C[dDwWp]') >= 0
       let title = 'Vimgrep: ' . s:capWord
       if g:vxoccur_grep_mode == 0
          call s:VimGrepFiles(s:capWord, range)
@@ -889,6 +909,8 @@ finish
    call s:CheckSetting('g:vxoccur_task_words', "['COMBAK', 'TODO', 'FIXME', 'XXX']")
    call s:CheckSetting('g:vxoccur_hist_size', '10')
    call s:CheckSetting('g:vxoccur_match_limit', '1000')
+   " this file sets the project root when searching with -p
+   call s:CheckSetting('g:vxoccur_project_file', '".vimproject"')
    " grep mode: 0 - vimgrep, 1 - grep (-r), 2 - find - xargs - grep
    call s:CheckSetting('g:vxoccur_grep_mode', '0')
    " variables used by grep.vim
