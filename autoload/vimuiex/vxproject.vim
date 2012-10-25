@@ -17,15 +17,15 @@ exec vxlib#plugin#MakeSID()
 " =========================================================================== 
 
 function! s:Strip(input_string)
-    return substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
+   return substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
 
 function! s:StripSection(input_string)
-    return substitute(a:input_string, '^\%(\[\|\s\)*\(.\{-}\)\%(\s\|\]\)*$', '\1', '')
+   return substitute(a:input_string, '^\%(\[\|\s\)*\(.\{-}\)\%(\s\|\]\)*$', '\1', '')
 endfunction
 
 function! s:RStrip(input_string)
-    return substitute(a:input_string, '^\(.\{-}\)\s*$', '\1', '')
+   return substitute(a:input_string, '^\(.\{-}\)\s*$', '\1', '')
 endfunction
 
 function! s:ExpandReferences(project, section)
@@ -129,7 +129,7 @@ function! s:LoadProject(fname)
 endfunc
 
 " Get the project settings for buffer
-function! vxproject#GetBufferProject(bufnr)
+function! vimuiex#vxproject#GetBufferProject(bufnr)
    let prj = getbufvar(a:bufnr, 'vxproject')
    if type(prj) == type({})
       return prj
@@ -197,9 +197,55 @@ function! s:ListFiles(root, masks)
    " TODO: prune subprojects
 endfunc
 
-function! Test()
+function! s:ListProjectFiles(prj)
+   let files = []
+   let bdir = fnamemodify(a:prj['project-file'], ':h')
+   for sec in s:listSections
+      if has_key(a:prj, sec)
+         let masks = a:prj[sec]
+         let lst = s:ListFiles(bdir, masks)
+         if len(lst) > 0
+            call extend(files, lst)
+         endif
+      endif
+   endfor
+   return files
+endfunc
+
+
+function! vimuiex#vxproject#SelectProjectFile()
+   let prj = vimuiex#vxproject#GetBufferProject(bufnr('%'))
+   if !has_key(prj, 'project-file')
+      return
+   endif
+   let files = [ prj['project-file'] ]
+   let lst = s:ListProjectFiles(prj)
+   call extend(files, lst)
+   function s:modfn(fn, bdir)
+      let fn = substitute(a:fn, '^' . a:bdir, '@p', '')
+      return fnamemodify(fn, ':t') . "\t" . fnamemodify(fn, ':h')
+   endfunc
+   let bdir = fnamemodify(prj['project-file'], ':h')
+   let disp = copy(files)
+   call map(disp, s:SNR . 'modfn(v:val, bdir)')
+   delfunc s:modfn
+
+   let opts = { 'columns': 1 }
+   if has_key(prj, 'title')
+      let title = '''' . prj['title'] . ''' files' 
+   else
+      let title = 'Project files'
+   endif
+   let rv = popuplist(disp, title, opts)
+   if rv.status == 'accept'
+      let fn = files[rv.current]
+      call vxlib#cmd#Edit(fn, '')
+   endif
+endfunc
+
+function! s:Test()
    let g:vxproject_project_file = '.vimproject'
-   let prj = vxproject#GetBufferProject(bufnr('%'))
+   let prj = vimuiex#vxproject#GetBufferProject(bufnr('%'))
    if has_key(prj, 'sources')
       let bdir = fnamemodify(prj['project-file'], ':h')
       let srcs = s:ListFiles(bdir, prj['sources'])
@@ -209,6 +255,7 @@ function! Test()
    if s:IsFileInProject(fnamemodify(bufname('%'), ':p'), prj)
       echom bufname('%') . ' is in project ' . prj['title']
    endif
+   call vimuiex#vxproject#SelectProjectFile()
 endfunc
 " =========================================================================== 
 " Global Initialization - Processed by Plugin Code Generator
@@ -220,4 +267,6 @@ finish
    " TODO: default name? .vimproject, .vxproject, .vxprj, .vimxprj?
    call s:CheckSetting('g:vxproject_project_file', '".vimproject"')
    call s:CheckSetting('g:vxproject_project_subdir', '".vxproject"')
+   command VxProjectFileFilter call vimuiex#vxproject#SelectProjectFile()
+   nmap <silent><unique> <Plug>VxProjectFileFilter :VxProjectFileFilter<cr>
 " </VIMPLUGIN>
