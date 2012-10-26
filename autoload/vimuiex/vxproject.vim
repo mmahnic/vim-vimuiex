@@ -1,5 +1,7 @@
 " vim:set fileencoding=utf-8 sw=3 ts=3 et
-" vxproject.vim - load settings for each buffer from a project file
+" vxproject.vim 
+"  - define a list of files that belong to a project
+"  - jump to a file from the project or included projects 
 "
 " Author: Marko Mahnič
 " Created: October 2012
@@ -16,8 +18,6 @@ endif
 exec vxlib#plugin#MakeSID()
 " =========================================================================== 
 
-let s:Projects = {}
-
 function! s:Strip(input_string)
    return substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
@@ -30,9 +30,97 @@ function! s:RStrip(input_string)
    return substitute(a:input_string, '^\(.\{-}\)\s*$', '\1', '')
 endfunction
 
+let s:Projects = {}
+
+function! s:Prj_GetTitle() dict
+   if has_key(self, 'title')
+      return self.title
+   endif
+   if has_key(self, 'project-file')
+      let fp = self['project-file']
+      let fn = fnamemodify(fp, ':t')
+      if fn =~ '\M^.'
+         let fn = fnamemodify(fp, ':p:h:t') . fn
+      endif
+      return fn
+   endif
+   return "Project"
+endfunc
+
+function! s:Prj_HasOption(name) dict
+   return has_key(self, '*') && has_key(self['*'], a:name)
+endfunc
+
+function! s:Prj_GetOption(name, default) dict
+   if self.hasOption(a:name)
+      return self['*'][a:name]
+   endif
+   return a:default
+endfunc
+
+function! s:Prj_SetOption(name, value) dict
+   if !has_key(self, '*')
+      let self['*'] = {}
+   endif
+   let self['*'][a:name] = a:value
+endfunc
+
+" Get the contents of the @p section if it exists or an empty list if it
+" doesn't.
+function! s:Prj_GetSection(section) dict
+   if has_key(s:sectionAlias, a:section)
+      let section = s:sectionAlias[a:section]
+   else
+      let section = a:section
+   endif
+   if has_key(self, section)
+      return self[section]
+   endif
+   return []
+endfunc
+
+" get the list of project files either from cache or by listing the FS
+function! s:Prj_GetFiles() dict
+   " TODO: file-cache could be saved in a file if memory size is an issue
+   if self.hasOption('all-files')
+      let files = self.getOption('all-files', [])
+      " echom "OK"
+   else
+      if !has_key(self, 'project-file')
+         return []
+      endif
+      let files = [ self['project-file'] ]
+      let lst = s:ListProjectFiles(self)
+      call extend(files, lst)
+      call self.setOption('all-files', files)
+   endif
+   return files
+endfunc
+
+" Create a new project "object" associated with file @p projectfile.
+function! s:NewProject(projectfile)
+   return { 'project-file': a:projectfile,
+            \ 'getTitle':       function(s:SNR . "Prj_GetTitle"),
+            \ 'getSection':     function(s:SNR . "Prj_GetSection"),
+            \ 'hasOption':      function(s:SNR . "Prj_HasOption"),
+            \ 'getOption':      function(s:SNR . "Prj_GetOption"),
+            \ 'setOption':      function(s:SNR . "Prj_SetOption"),
+            \ 'getFiles':       function(s:SNR . "Prj_GetFiles")
+            \  }
+endfunc
+
+" some sections, like ctags, can reference other sections like '@sources'
 function! s:ExpandReferences(project, section)
 endfunc
 
+" Search for project files in @p startdir and its parents.
+" Currently the first project file that is found is used. This means there can
+" only be one file per project. The file belongs to the first found project
+" even if it isn't listed in any of the sections.
+"
+" TODO: load every project file and verify if the file for which the project
+" is searched belongs to the project.
+" TODO: verify in the loaded projects, first
 function! s:FindProjectFile(startdir)
    if g:vxproject_project_file == "" 
       return ""
@@ -74,19 +162,11 @@ let s:sectionParsers = {
          \ 'plug:vxoccur': function(s:SNR . "ExpandReferences")
          \ }
 
-function! s:GetSection(project, section)
-   if has_key(s:sectionAlias, a:section)
-      let section = s:sectionAlias[a:section]
-   else
-      let section = a:section
-   endif
-   return a:project[section]
-endfunc
-
+" Read the project file @p fname into a dictionary object.
 " [section]
-" [.subsection]
+" [.subsection] - not used/detected
 function! s:LoadProject(fname)
-   let project = { 'project-file': a:fname }
+   let project = s:NewProject( a:fname )
    let lines = readfile(a:fname)
 
    let header = 1
@@ -130,7 +210,26 @@ function! s:LoadProject(fname)
    return project
 endfunc
 
-" Get the project settings for buffer
+" Get the project that was read from @p projectfile. Read it if it isn't
+" already loaded.
+function! s:GetProject(projectfile)
+   let prjfile = fnamemodify(a:projectfile, ':p')
+   let prjkey = simplify(prjfile) " alternative: resolve()
+   let prj = {}
+   if has_key(s:Projects, prjkey)
+      " echom "FOUND"
+      let prj = s:Projects[prjkey]
+   else
+      " echom "LOADING"
+      if (filereadable(prjfile))
+         let prj = s:LoadProject(prjfile)
+         let s:Projects[prjkey] = prj
+      endif
+   endif
+   return prj
+endfunc
+
+" Get the project settings for buffer @p bufnr
 function! vimuiex#vxproject#GetBufferProject(bufnr)
    let prj = getbufvar(a:bufnr, 'vxproject')
    if type(prj) == type({})
@@ -141,20 +240,13 @@ function! vimuiex#vxproject#GetBufferProject(bufnr)
    if prjfile == ""
       let prj = {}
    else
-      let prjkey = simplify(prjfile) " alternative: resolve()
-      if has_key(s:Projects, prjkey)
-         " echom "FOUND"
-         let prj = s:Projects[prjkey]
-      else
-         " echom "LOADING"
-         let prj = s:LoadProject(prjfile)
-         let s:Projects[prjkey] = prj
-      endif
+      let prj = s:GetProject(prjfile)
    endif
    call setbufvar(a:bufnr, 'vxproject', prj)
    return prj
 endfunc
 
+" Match fullpath to mask using glob() rules.
 function! s:FilepathMatch(fullpath, mask)
    " try to convert a glob() pattern into a regex
    let m = a:mask
@@ -171,6 +263,7 @@ function! s:FilepathMatch(fullpath, mask)
    return match(a:fullpath, m) == 0
 endfunc
 
+" Check if the file @p fullpath matches any of the patterns of the project.
 function! s:IsFileInProject(fullpath, prj)
    let bdir = fnamemodify(a:prj['project-file'], ':h')
    for sec in s:listSections
@@ -193,6 +286,9 @@ function! s:IsFileInProject(fullpath, prj)
    return 0
 endfunc
 
+" List files in directory that match any of the globbing expressions in masks.
+" Can recurse directories.
+" TODO: currently duplicate entries could be found in the resulting list
 function! s:ListFiles(root, masks)
    let res = []
    for m in a:masks
@@ -206,12 +302,13 @@ function! s:ListFiles(root, masks)
    " TODO: prune subprojects
 endfunc
 
+" glob for project files on disk
 function! s:ListProjectFiles(prj)
    let files = []
    let bdir = fnamemodify(a:prj['project-file'], ':h')
    for sec in s:listSections
-      if has_key(a:prj, sec)
-         let masks = a:prj[sec]
+      let masks = a:prj.getSection(sec)
+      if len(masks) > 0
          let lst = s:ListFiles(bdir, masks)
          if len(lst) > 0
             call extend(files, lst)
@@ -221,44 +318,81 @@ function! s:ListProjectFiles(prj)
    return files
 endfunc
 
-
+" Find all the files that belong to the project and display them in a popup
+" list. Edit the file when it is selected.
+"
+" Files from the included projects can also be listed if the user toggles this
+" option by pressing 'oi' while the list is displayed (and the filter is
+" inactive).
+"
+" TODO: option/toggle to list files from subprojects
+" TODO: create a virtual file system and give it to VxFileBrowse
 function! vimuiex#vxproject#SelectProjectFile()
    let prj = vimuiex#vxproject#GetBufferProject(bufnr('%'))
-   if has_key(prj, '*') && has_key(prj['*'], 'all-files')
-      let files = prj['*']['all-files']
-      " echom "OK"
-   else
-      if !has_key(prj, 'project-file')
-         return
-      endif
-      let files = [ prj['project-file'] ]
-      let lst = s:ListProjectFiles(prj)
-      call extend(files, lst)
-      if !has_key(prj, '*')
-         let prj['*'] = {}
-      endif
-      let prj['*']['all-files'] = files
+   if len(prj) < 1
+      echom "No project was found for current buffer."
+      return
    endif
-   function s:modfn(fn, bdir)
-      let fn = substitute(a:fn, '^' . a:bdir, '@p', '')
+   if has_key(prj, '*') && has_key(prj['*'], 'list-includes')
+      let listIncludes = prj['*']['list-includes']
+   else
+      let listIncludes = 0
+   endif
+   let files = prj.getFiles() " s:GetProjectFiles(prj)
+
+   function s:modfn(fn, bdir, prefix)
+      let fn = substitute(a:fn, '^' . a:bdir, a:prefix, '')
       return fnamemodify(fn, ':t') . "\t" . fnamemodify(fn, ':h')
    endfunc
    let bdir = fnamemodify(prj['project-file'], ':h')
-   let disp = copy(files)
-   call map(disp, s:SNR . 'modfn(v:val, bdir)')
-   delfunc s:modfn
 
-   let opts = { 'columns': 1 }
-   if has_key(prj, 'title')
-      let title = '''' . prj['title'] . ''' files' 
-   else
-      let title = 'Project files'
-   endif
-   let rv = popuplist(disp, title, opts)
-   if rv.status == 'accept'
-      let fn = files[rv.current]
-      call vxlib#cmd#Edit(fn, '')
-   endif
+   " TODO: user-option to start in filter mode by default?
+   let opts = { 'columns': 1, 'mode': 'normal',
+            \ 'keymap': { 'normal': { 'oi': 'done:toggle-includes' }}
+            \ }
+   let title = '''' . prj.getTitle() . ''' files'
+
+   let repeat = 1
+   while repeat
+      let repeat = 0
+      let allFiles = copy(files)
+      let disp = copy(files)
+      call map(disp, s:SNR . 'modfn(v:val, bdir, "@")')
+
+      if listIncludes && has_key(prj, 'includes')
+         let incls = prj['includes']
+         for inc in incls
+            if inc !~ '/'   " not an absolute path
+               let inc = simplify(bdir . '/' . inc)
+            endif
+            let idir = fnamemodify(inc, ':p:h')
+            let ip = s:GetProject(inc)
+            if len(ip) < 1
+               continue
+            endif
+            let ifiles = ip.getFiles() " s:GetProjectFiles(ip)
+            if len(ifiles) < 1
+               continue
+            endif
+            let idisp = copy(ifiles)
+            " XXX: ip['title'] could fail !
+            call map(idisp, s:SNR . 'modfn(v:val, idir, "I:' . ip.getTitle() . ':")')
+            call extend(disp, idisp)
+            call extend(allFiles, ifiles)
+         endfor
+      endif
+
+      let rv = popuplist(disp, title, opts)
+      if rv.status == 'done:toggle-includes'
+         let listIncludes = !listIncludes
+         let repeat = 1
+         let opts['mode'] = rv.mode
+      elseif rv.status == 'accept'
+         let fn = allFiles[rv.current]
+         call vxlib#cmd#Edit(fn, '')
+      endif
+   endwhile " repeat
+   delfunc s:modfn
 endfunc
 
 function! s:Test()
