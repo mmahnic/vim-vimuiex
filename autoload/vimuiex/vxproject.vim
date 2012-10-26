@@ -16,6 +16,8 @@ endif
 exec vxlib#plugin#MakeSID()
 " =========================================================================== 
 
+let s:Projects = {}
+
 function! s:Strip(input_string)
    return substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
@@ -134,13 +136,20 @@ function! vimuiex#vxproject#GetBufferProject(bufnr)
    if type(prj) == type({})
       return prj
    endif
-   " TODO: find existing project
    unlet prj
    let prjfile = s:FindProjectFile(fnamemodify(bufname(a:bufnr), ':p:h'))
    if prjfile == ""
       let prj = {}
    else
-      let prj = s:LoadProject(prjfile)
+      let prjkey = simplify(prjfile) " alternative: resolve()
+      if has_key(s:Projects, prjkey)
+         " echom "FOUND"
+         let prj = s:Projects[prjkey]
+      else
+         " echom "LOADING"
+         let prj = s:LoadProject(prjfile)
+         let s:Projects[prjkey] = prj
+      endif
    endif
    call setbufvar(a:bufnr, 'vxproject', prj)
    return prj
@@ -215,12 +224,21 @@ endfunc
 
 function! vimuiex#vxproject#SelectProjectFile()
    let prj = vimuiex#vxproject#GetBufferProject(bufnr('%'))
-   if !has_key(prj, 'project-file')
-      return
+   if has_key(prj, '*') && has_key(prj['*'], 'all-files')
+      let files = prj['*']['all-files']
+      " echom "OK"
+   else
+      if !has_key(prj, 'project-file')
+         return
+      endif
+      let files = [ prj['project-file'] ]
+      let lst = s:ListProjectFiles(prj)
+      call extend(files, lst)
+      if !has_key(prj, '*')
+         let prj['*'] = {}
+      endif
+      let prj['*']['all-files'] = files
    endif
-   let files = [ prj['project-file'] ]
-   let lst = s:ListProjectFiles(prj)
-   call extend(files, lst)
    function s:modfn(fn, bdir)
       let fn = substitute(a:fn, '^' . a:bdir, '@p', '')
       return fnamemodify(fn, ':t') . "\t" . fnamemodify(fn, ':h')
