@@ -333,11 +333,7 @@ function! vimuiex#vxproject#SelectProjectFile()
       echom "No project was found for current buffer."
       return
    endif
-   if has_key(prj, '*') && has_key(prj['*'], 'list-includes')
-      let listIncludes = prj['*']['list-includes']
-   else
-      let listIncludes = 0
-   endif
+   let listIncludes = prj.getOption('list-includes', 0)
    let files = prj.getFiles() " s:GetProjectFiles(prj)
 
    function s:modfn(fn, bdir, prefix)
@@ -387,6 +383,7 @@ function! vimuiex#vxproject#SelectProjectFile()
          let listIncludes = !listIncludes
          let repeat = 1
          let opts['mode'] = rv.mode
+         call prj.setOption('list-includes', listIncludes)
       elseif rv.status == 'accept'
          let fn = allFiles[rv.current]
          call vxlib#cmd#Edit(fn, '')
