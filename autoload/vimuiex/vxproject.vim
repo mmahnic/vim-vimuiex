@@ -12,6 +12,8 @@ if vxlib#plugin#StopLoading('#au#vimuiex#vxproject')
 "   finish
 endif
 
+let s:pyscript = fnamemodify(expand('<sfile>'), ':p:h:h:h') . '/modpython/vimuiex/vxprojectfiles.py'
+
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
@@ -273,7 +275,7 @@ function! s:IsFileInProject(fullpath, prj)
       let masks = a:prj[sec]
       for m in masks
          if m =~ '^/'
-            let found = s:FilenpathMatch(a:fullpath, m)
+            let found = s:FilepathMatch(a:fullpath, m)
          else
             let found = s:FilepathMatch(a:fullpath, bdir . '/' . m)
          endif
@@ -288,7 +290,7 @@ endfunc
 
 " List files in directory that match any of the globbing expressions in masks.
 " Can recurse directories.
-" TODO: currently duplicate entries could be found in the resulting list
+" TODO: currently duplicate entries could be present in the resulting list
 function! s:ListFiles(root, masks)
    let res = []
    for m in a:masks
@@ -303,7 +305,7 @@ function! s:ListFiles(root, masks)
 endfunc
 
 " glob for project files on disk
-function! s:ListProjectFiles(prj)
+function! s:ListProjectFiles_vim(prj)
    let files = []
    let bdir = fnamemodify(a:prj['project-file'], ':h')
    for sec in s:listSections
@@ -316,6 +318,30 @@ function! s:ListProjectFiles(prj)
       endif
    endfor
    return files
+endfunc
+
+function! s:ListProjectFiles(prj)
+   if g:vxproject_lister == "syspython" 
+      return s:ListProjectFiles_syspython(a:prj)
+   endif
+   return s:ListProjectFiles_vim(a:prj)
+endfunc
+
+function! s:ListProjectFiles_syspython(prj)
+   let files = []
+   let projfile = fnamemodify(a:prj['project-file'], ':p')
+   let cmd = "!python " . s:pyscript . " " . projfile
+   if has('gui_running') != 0
+      let flist = vxlib#cmd#Capture(cmd, 1)
+   else
+      if cmd =~ '^\s*!'
+         let flist = vxlib#cmd#CaptureShell(cmd)
+      else
+         let flist = vxlib#cmd#Capture(cmd, 1)
+      endif
+   endif
+   call filter(flist, 'v:val =~ "^/"')
+   return flist
 endfunc
 
 " Find all the files that belong to the project and display them in a popup
@@ -358,7 +384,7 @@ function! vimuiex#vxproject#SelectProjectFile()
       if listIncludes && has_key(prj, 'includes')
          let incls = prj['includes']
          for inc in incls
-            if inc !~ '/'   " not an absolute path
+            if inc !~ '^/.*'   " not an absolute path
                let inc = simplify(bdir . '/' . inc)
             endif
             let idir = fnamemodify(inc, ':p:h')
@@ -416,6 +442,7 @@ finish
    " TODO: default name? .vimproject, .vxproject, .vxprj, .vimxprj?
    call s:CheckSetting('g:vxproject_project_file', '".vimproject"')
    call s:CheckSetting('g:vxproject_project_subdir', '".vxproject"')
+   call s:CheckSetting('g:vxproject_lister', '"syspython"') " python or vim (maybe also: python, pyscript)
    command VxProjectFileFilter call vimuiex#vxproject#SelectProjectFile()
    nmap <silent><unique> <Plug>VxProjectFileFilter :VxProjectFileFilter<cr>
 " </VIMPLUGIN>
