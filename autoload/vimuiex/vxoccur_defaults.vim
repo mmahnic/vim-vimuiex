@@ -52,6 +52,8 @@ call s:DefRoutines('slice',
 call s:DefRoutines('vim', '\(^\s*' . s:ReWords('fun|func|function', '|') . '!\?\W\)', '')
 call s:DefRoutines('xhtml', g:vxoccur_routine_def['html'], '')
 call s:DefRoutines('viki', '^\*\+\s', '')
+call s:DefRoutines('zimbu',
+   \ '\C\(^\s*' . s:ReWords('CLASS|INTERFACE|MODULE|ENUM|FUNC|PROC|PIECE', '|') . '\W\)', '')
 
 "================================================================= 
 " LATEX
