@@ -242,6 +242,12 @@ function! vimuiex#vxoccur_defaults#ExtractAsciiDocTitle()
 endfunc
 
 "================================================================= 
+" Rust
+"================================================================= 
+call s:DefRoutines('rust', 
+   \ '\(^\s*' . s:ReWords('pub|fn|struct|impl', '|') . '\W\)', '')
+
+"================================================================= 
 " Cleanup
 delfunc s:ReWords
 delfunc s:DefRoutines
