@@ -446,13 +446,20 @@ function s:FindProjectRoot()
    let prevdir = ""
    while expand(cwd) != prevdir
       echom cwd . ' ' . expand(cwd)
-      if filereadable(expand(cwd) . '/' . g:vxoccur_project_file)
+      if expand(cwd) == "/" || expand(cwd) == "//"
+         break
+      endif
+      let fn = expand(cwd) . '/' . g:vxoccur_project_file
+      if filereadable(fn)
+         echom "Readable: " . fn
          return expand(cwd)
       endif
       let prevdir = expand(cwd)
       let cwd = cwd . ':h'
    endwhile
-   return expand('%:p:h')
+   let fn = expand('%:p:h')
+   echom "Not readable, using: " . fn
+   return fn
 endfunc
 
 function! s:VimGrepBuffers(word, range)
@@ -615,7 +622,7 @@ function! vimuiex#vxoccur#VxSourceTasks()
    let range = s:GetSearchRange()
    if range == '' | return | endif
 
-   if match(range[0], '\C[dDwW]') >= 0
+   if match(range[0], '\C[dDwWpP]') >= 0
       let title = 'Tasks in Source (vimgrep)'
       if g:vxoccur_grep_mode == 0
          call s:VimGrepFiles('\C' . join(g:vxoccur_task_words, '\|'), range)
