@@ -12,7 +12,7 @@ if vxlib#plugin#StopLoading('#au#vimuiex#vxproject')
 "   finish
 endif
 
-let s:pyscript = fnamemodify(expand('<sfile>'), ':p:h:h:h') . '/modpython/vimuiex/vxprojectfiles.py'
+let s:pyscript = fnamemodify(expand('<sfile>'), ':p:h:h:h') . '/modpython/script/vxprj-listfiles.py'
 
 " =========================================================================== 
 " Local Initialization - on autoload
