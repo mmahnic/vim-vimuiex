@@ -384,6 +384,10 @@ function! vimuiex#vxproject#SelectProjectFile()
       if listIncludes && has_key(prj, 'includes')
          let incls = prj['includes']
          for inc in incls
+            let inc = s:Strip(inc)
+            if inc =~ '^#' || inc =~ '^[a-z]\+:\s*$'
+               continue
+            endif
             if inc !~ '^/.*'   " not an absolute path
                let inc = simplify(bdir . '/' . inc)
             endif

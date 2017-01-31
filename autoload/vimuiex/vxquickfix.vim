@@ -70,7 +70,11 @@ function! vimuiex#vxquickfix#VxQuickFixPuls(mode)
    " TODO: mode=='select': display a menu with all available error lists / loaction lists
    if has('popuplist')
       if a:mode == 'lopen' || a:mode == 'copen'
-         let rslt = popuplist(a:mode)
+         let opts = {
+                  \ 'highlight':  'error\|syntax error\|warning\|C[0-9]\{4,}', 
+                  \ 'highlight_matcher': 'regexp'
+                  \ }
+         let rslt = popuplist(a:mode, 'Quickfix - ' . a:mode, opts)
       else
          let rslt = popuplist('quickfix')
       endif

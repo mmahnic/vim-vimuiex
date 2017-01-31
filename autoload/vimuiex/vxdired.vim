@@ -111,7 +111,7 @@ function! s:PyLsExec(dir)
 endfunc
 
 function! s:SysLsExec(dir)
-   let cmd = '!ls -hal --time-style long-iso --group-directories-first ' . a:dir
+   let cmd = '!ls -haln --time-style long-iso --group-directories-first ' . a:dir
    if has('gui_running')
       let files = vxlib#cmd#Capture(cmd, 1)
    else
@@ -121,7 +121,8 @@ function! s:SysLsExec(dir)
 endfunc
 
 if has('python')
-   let s:LsExec = function("s:PyLsExec")
+   " let s:LsExec = function("s:PyLsExec") " TODO: problems with Python installation(version)
+   let s:LsExec = function("s:SysLsExec")
 else
    let s:LsExec = function("s:SysLsExec")
 endif
