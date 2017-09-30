@@ -21,7 +21,9 @@ if !has('popuplist')
 endif
 exec vxlib#plugin#MakeSID()
 let s:bufnumbers = []
+let g:_VxPopupListPosDefault = get(g:, '_VxPopupListPosDefault', {})
 let g:_VxPopupListPosDefault['VxBufListSelect'] = 'minsize=0.4,8'
+let g:plug_vxbuflist = get(g:, 'plug_vxbuflist', {})
 " =========================================================================== 
 
 let s:bufOrderDef = [ ['m', 'MRU'], ['#', 'BufNr'], ['n', 'Name'], ['e', 'Ext'], ['f', 'Path'] ]
@@ -220,7 +222,7 @@ endfunc
 
 function! vimuiex#vxbuflist#VxBufListSelect()
    if has('popuplist')
-      if ! g:vxbuflist_use_internal
+      if ! get(g:plug_vxbuflist, 'use_internal', 0)
          call s:PulsBuferList()
       else
          " use the internal buffer provider
@@ -262,27 +264,3 @@ EOF
 
 endfunc
 
-" =========================================================================== 
-" Global Initialization - Processed by Plugin Code Generator
-" =========================================================================== 
-finish
-
-" <VIMPLUGIN id="vimuiex#vxbuflist" require="popuplist||python&&(!gui_running||python_screen)">
-   call s:CheckSetting('g:vxbuflist_use_internal', '0')
-   let g:VxPluginVar.vxbuflist_mru = []
-   function s:VIMUIEX_buflist_pushBufNr(nr)
-      " mru code adapted from tlib#buffer
-      let lst = g:VxPluginVar.vxbuflist_mru
-      let i = index(lst, a:nr)
-      if i > 0  | call remove(lst, i) | endif
-      if i != 0 | call insert(lst, a:nr) | endif
-   endfunc
-
-   augroup vxbuflist
-      autocmd BufEnter * call s:VIMUIEX_buflist_pushBufNr(bufnr('%'))
-   augroup END
-   command VxBufListSelect call vimuiex#vxbuflist#VxBufListSelect()
-   nmap <silent><unique> <Plug>VxBufListSelect :VxBufListSelect<cr>
-   imap <silent><unique> <Plug>VxBufListSelect <Esc>:VxBufListSelect<cr>
-   vmap <silent><unique> <Plug>VxBufListSelect :<c-u>VxBufListSelect<cr>
-" </VIMPLUGIN>
