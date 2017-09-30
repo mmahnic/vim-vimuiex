@@ -22,6 +22,12 @@ function! vimuiex#mapmenu#ShowKeyMenu(mapcmd, mapprefix)
       return
    endif
 
+   " merge new menu entry names
+   if has_key(g:plug_mapmenu, 'command_names')
+      call extend(s:KeyMenuItems, g:plug_mapmenu.command_names)
+      call remove(g:plug_mapmenu, 'command_names')
+   endif
+
    " capture the keymap for the map-prefix and create the menu items
    let maps = vxlib#cmd#Capture( a:mapcmd . ' ' . a:mapprefix, 1 )
    let text = ""
@@ -69,7 +75,4 @@ function! vimuiex#mapmenu#SetKeymapTitle(keymap, title)
    let s:KeyMenuItems[a:keymap] = a:title
 endfunc
 
-if has_key(g:plug_mapmenu, 'command_names')
-   call extend(s:KeyMenuItems, g:plug_mapmenu.command_names)
-endif
 
