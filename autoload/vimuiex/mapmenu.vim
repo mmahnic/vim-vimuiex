@@ -11,6 +11,8 @@ if vxlib#plugin#StopLoading('#au#vimuiex#mapmenu')
    finish
 endif
 
+let g:plug_mapmenu = get(g:, 'plug_mapmenu', {})
+
 let s:KeyMenuItems = {}
 let s:capture = []
 
@@ -66,3 +68,8 @@ endfunc
 function! vimuiex#mapmenu#SetKeymapTitle(keymap, title)
    let s:KeyMenuItems[a:keymap] = a:title
 endfunc
+
+if has_key(g:plug_mapmenu, 'command_names')
+   call extend(s:KeyMenuItems, g:plug_mapmenu.command_names)
+endif
+
