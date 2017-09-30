@@ -10,7 +10,7 @@ call vxlib#plugin#Init() " just in case
 " <id="vimuiex#vxbuflist" require="popuplist||python&&(!gui_running||python_screen)">
 
 let g:plug_vxbuflist = get(g:, 'plug_vxbuflist', {})
-let g:plug_vxbuflist.use_internal = 0
+let g:plug_vxbuflist.use_internal = get(g:plug_vxbuflist, 'use_internal', 0)
 
 let g:VxPluginVar.vxbuflist_mru = []
 function s:VIMUIEX_buflist_pushBufNr(nr)
