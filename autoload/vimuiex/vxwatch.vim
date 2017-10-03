@@ -147,14 +147,3 @@ function! vimuiex#vxwatch#VxWatchAll()
    call vimuiex#vxwatch#VxWatch(l:vard, "{Vim}")
 endfunc
 
-" ===========================================================================
-" Global Initialization - Processed by Plugin Code Generator
-" ===========================================================================
-finish
-
-" <VIMPLUGIN id="vimuiex#vxwatch" require="popuplist">
-
-   command -complete=var -nargs=1 VxWatch call vimuiex#vxwatch#VxWatch(<args>, <q-args>)
-   command VxWatchAll call vimuiex#vxwatch#VxWatchAll()
-
-" </VIMPLUGIN>
