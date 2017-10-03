@@ -64,15 +64,3 @@ function! s:SelectItem(index)
    let s:selected = a:index
 endfunc
 
-" =========================================================================== 
-" Global Initialization - Processed by Plugin Code Generator
-" =========================================================================== 
-finish
-
-" <VIMPLUGIN id="vimuiex#vxcmdhist" require="popuplist||python&&(!gui_running||python_screen)">
-   call s:CheckSetting('g:vxcmdhist_default_map', '1')
-   if g:vxcmdhist_default_map
-      cnoremap <pageup> <C-\>evimuiex#vxcmdhist#PopupHist()<cr>
-      cnoremap <pagedown> <C-\>evimuiex#vxcmdhist#PopupHist()<cr>
-   endif
-" </VIMPLUGIN>
