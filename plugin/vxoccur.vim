@@ -19,7 +19,7 @@ endfunc
 
 let g:plug_vxoccur = get(g:, 'plug_vxoccur', {})
 
-" TODO: move this settings to plug_vxoccur
+" TODO: move these settings to plug_vxoccur
 call s:Check(g:, [], 'vxoccur_routine_def', {})
 call s:Check(g:, [], 'vxoccur_task_words', ['COMBAK', 'TODO', 'FIXME', 'XXX'])
 call s:Check(g:, [], 'vxoccur_hist_size', 10)
