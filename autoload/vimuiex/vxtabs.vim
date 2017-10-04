@@ -17,7 +17,7 @@ endif
 " =========================================================================== 
 " call vxlib#python#prepare()
 exec vxlib#plugin#MakeSID()
-let g:_VxPopupListPosDefault['VxTabSelect'] = 'position=311'
+" let g:_VxPopupListPosDefault['VxTabSelect'] = 'position=311'
 " =========================================================================== 
 
 function! s:GetTabList()
@@ -68,11 +68,3 @@ function! vimuiex#vxtabs#VxTabSelect()
    endif
 endfunc
 
-" =========================================================================== 
-" Global Initialization - Processed by Plugin Code Generator
-" =========================================================================== 
-finish
-
-" <VIMPLUGIN id="vimuiex#vxtabs" require="popuplist||python&&(!gui_running||python_screen)">
-   command VxTabSelect call vimuiex#vxtabs#VxTabSelect()
-" </VIMPLUGIN>
