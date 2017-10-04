@@ -81,14 +81,3 @@ function! vimuiex#vxquickfix#VxQuickFixPuls(mode)
    endif
 endfunc
 
-" =========================================================================== 
-" Global Initialization - Processed by Plugin Code Generator
-" =========================================================================== 
-finish
-
-
-" <VIMPLUGIN id="vimuiex#vxquickfix" require="popuplist">
-   command VxQfErrors call vimuiex#vxquickfix#VxQuickFixPuls('copen')
-   command VxQfLocations call vimuiex#vxquickfix#VxQuickFixPuls('lopen')
-" </VIMPLUGIN>
-
