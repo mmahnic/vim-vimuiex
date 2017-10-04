@@ -19,19 +19,25 @@ endfunc
 
 let g:plug_vxoccur = get(g:, 'plug_vxoccur', {})
 
-" TODO: move these settings to plug_vxoccur
-call s:Check(g:, [], 'vxoccur_routine_def', {})
-call s:Check(g:, [], 'vxoccur_task_words', ['COMBAK', 'TODO', 'FIXME', 'XXX'])
-call s:Check(g:, [], 'vxoccur_hist_size', 10)
-call s:Check(g:, [], 'vxoccur_match_limit', 1000)
+call s:Check(g:plug_vxoccur, [], 'routine_def', {})
+call s:Check(g:plug_vxoccur, [], 'taks_words', ['COMBAK', 'TODO', 'FIXME', 'XXX'])
+call s:Check(g:plug_vxoccur, [], 'hist_size', 10)
+call s:Check(g:plug_vxoccur, [], 'match_limit', 1000)
 " this file sets the project root when searching with -p
-call s:Check(g:, [], 'vxoccur_project_file', '.vimproject')
+call s:Check(g:plug_vxoccur, [], 'project_file', '.vimproject')
 " grep mode: 0 - vimgrep, 1 - grep (-r), 2 - find - xargs - grep
-call s:Check(g:, [], 'vxoccur_grep_mode', 0)
+call s:Check(g:plug_vxoccur, [], 'grep_mode', 0)
 " variables used by grep.vim
 call s:Check(g:, [], 'Grep_Path', 'grep')
 call s:Check(g:, [], 'Grep_Find_Path', 'find')
 call s:Check(g:, [], 'Grep_Xargs_Path', 'xargs')
+
+let vxoccur_routine_def = g:plug_vxoccur.routine_def
+let vxoccur_task_words = g:plug_vxoccur.taks_words
+let vxoccur_hist_size = g:plug_vxoccur.hist_size
+let vxoccur_match_limit = g:plug_vxoccur.match_limit
+let vxoccur_project_file = g:plug_vxoccur.project_file
+let vxoccur_grep_mode = g:plug_vxoccur.grep_mode
 
 command VxOccur call vimuiex#vxoccur#VxOccur()
 command VxOccurCurrent call vimuiex#vxoccur#VxOccurCurrent()
