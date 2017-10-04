@@ -436,17 +436,4 @@ function! s:Test()
    endif
    call vimuiex#vxproject#SelectProjectFile()
 endfunc
-" =========================================================================== 
-" Global Initialization - Processed by Plugin Code Generator
-" =========================================================================== 
-finish
 
-" <VIMPLUGIN id="vimuiex#vxproject" require="popuplist||python&&(!gui_running||python_screen)">
-   " TODO: this should be a list of possible files/file extensions
-   " TODO: default name? .vimproject, .vxproject, .vxprj, .vimxprj?
-   call s:CheckSetting('g:vxproject_project_file', '".vimproject"')
-   call s:CheckSetting('g:vxproject_project_subdir', '".vxproject"')
-   call s:CheckSetting('g:vxproject_lister', '"syspython"') " python or vim (maybe also: python, pyscript)
-   command VxProjectFileFilter call vimuiex#vxproject#SelectProjectFile()
-   nmap <silent><unique> <Plug>VxProjectFileFilter :VxProjectFileFilter<cr>
-" </VIMPLUGIN>
