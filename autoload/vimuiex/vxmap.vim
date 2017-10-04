@@ -111,25 +111,3 @@ function! vimuiex#vxmap#InstallKeys(keyset, commandset)
    call vxlib#menu#DoVimMenu(name, g:vxmap_quick_menu)
 endfunc
 
-" =========================================================================== 
-" Global Initialization - Processed by Plugin Code Generator
-" =========================================================================== 
-finish
-
-" <VIMPLUGIN id="vimuiex#vxmap#quickkeys" require="menu">
-   " use 'default' to append; use 'default!' to replace
-   " each list item is: ['key', 'key', ...]
-   call s:CheckSetting('g:vxmap_quick_keys', "{'default!': ['<F5>', '<F6>', '<F7>']}")
-
-   " dictionary of lists; use 'default' to append; use 'default!' to replace
-   " each list item is: ['menu entry', ['command', 'command', ...]]
-   call s:CheckSetting('g:vxmap_quick_commands', "{'default': []}")
-
-   " vimuiex/popup/choice(/tlib, not yet)
-   call s:CheckSetting('g:vxmap_quick_menu', "'popuplist'")
-
-   nmap <silent><unique> <Plug>VxMapDefaultKeys :call vimuiex#vxmap#InstallKeys('default','default')<cr>
-   imap <silent><unique> <Plug>VxMapDefaultKeys <Esc>:call vimuiex#vxmap#InstallKeys('default','default')<cr>
-   vmap <silent><unique> <Plug>VxMapDefaultKeys <Esc>:call vimuiex#vxmap#InstallKeys('default','default')<cr>
-" </VIMPLUGIN>
-
