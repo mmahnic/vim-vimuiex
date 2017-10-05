@@ -45,6 +45,11 @@ function! s:VIMUIEX_dired_SaveHistory()
    let g:VXRECENTDIRS = join(g:VxPluginVar.vxrecentfile_dirs, "\n")
 endfunc
 
+function! s:VIMUIEX_dired_RestoreHistory()
+   call s:Check(g:, [], 'VXRECENTDIRS', '')
+   let g:VxPluginVar.vxrecentfile_dirs = split(g:VXRECENTDIRS, "\n")
+endfunc
+
 function! s:VIMUIEX_dired_AutoMRU(filename) " based on tmru.vim
    if ! has_key(g:VxPluginVar, 'vxrecentfile_dirs') | return | endif
    if &buflisted && &buftype !~ 'nofile' && fnamemodify(a:filename, ':t') != ''
@@ -72,11 +77,10 @@ augroup vxdired
    autocmd BufWritePost,BufReadPost  * call s:VIMUIEX_dired_AutoMRU(expand('<afile>:p'))
    autocmd VimLeavePre * call s:VIMUIEX_dired_SaveHistory()
 augroup END
-
-" <STARTUP> TODO: add to a list of functions to run after startup (BufWinEnter, VimEnter)
-call s:Check(g:, [], 'VXRECENTDIRS', '')
-let g:VxPluginVar.vxrecentfile_dirs = split(g:VXRECENTDIRS, "\n")
-" </STARTUP>
+augroup vxdired_startup
+   autocmd VimEnter * call s:VIMUIEX_dired_RestoreHistory()
+            \ | autocmd! vxdired_startup
+augroup END
 
 command VxFileBrowser call vimuiex#vxdired#VxFileBrowser('browse')
 command VxFileFilter call vimuiex#vxdired#VxFileBrowser('filter')

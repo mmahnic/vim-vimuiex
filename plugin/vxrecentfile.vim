@@ -28,6 +28,11 @@ function! s:VIMUIEX_recentfile_SaveHistory()
    let g:VXRECENTFILES = join(g:VxPluginVar.vxrecentfile_files, "\n")
 endfunc
 
+function! s:VIMUIEX_recentfile_RestoreHistory()
+   call s:Check(g:, [], 'VXRECENTFILES', '')
+   let g:VxPluginVar.vxrecentfile_files = split(g:VXRECENTFILES, "\n")
+endfunc
+
 function! s:VIMUIEX_recentfile_AutoMRU(filename) " based on tmru.vim
    if ! has_key(g:VxPluginVar, 'vxrecentfile_files') | return | endif
    if &buflisted && &buftype !~ 'nofile' && fnamemodify(a:filename, ':t') != ''
@@ -57,11 +62,10 @@ augroup vxrecentfile
    autocmd BufWritePost,BufReadPost * call s:VIMUIEX_recentfile_AutoMRU(expand('<afile>:p'))
    autocmd VimLeavePre * call s:VIMUIEX_recentfile_SaveHistory()
 augroup END
-
-" <STARTUP> TODO: add to a list of functions to run after startup (BufWinEnter, VimEnter)
-call s:Check(g:, [], 'VXRECENTFILES', '')
-let g:VxPluginVar.vxrecentfile_files = split(g:VXRECENTFILES, "\n")
-" </STARTUP>
+augroup vxrecentfile_startup
+   autocmd VimEnter * call s:VIMUIEX_recentfile_RestoreHistory()
+            \ | autocmd! vxrecentfile_startup
+augroup END
 
 command VxOpenRecentFile call vimuiex#vxrecentfile#VxOpenRecentFile()
 nmap <silent><unique> <Plug>VxOpenRecentFile :VxOpenRecentFile<cr>
