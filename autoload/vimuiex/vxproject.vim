@@ -132,7 +132,21 @@ function! s:FindProjectFile(startdir)
    while cwd != prevdir
       let fn = cwd . '/' . g:vxproject_project_file
       if filereadable(fn)
+         " echom "DEBUG: File readable: " . fn
          return fn
+      endif
+      let prevdir = cwd
+      let cwd = fnamemodify(cwd, ':h')
+   endwhile
+   return ""
+endfunc
+
+function! s:FindScmRoot(startdir)
+   let cwd = fnamemodify(a:startdir, ':p')
+   let prevdir = ""
+   while cwd != prevdir
+      if isdirectory( cwd . '/.git' ) || isdirectory( cwd . '/.hg' )
+         return cwd
       endif
       let prevdir = cwd
       let cwd = fnamemodify(cwd, ':h')
@@ -212,6 +226,21 @@ function! s:LoadProject(fname)
    return project
 endfunc
 
+function! s:CreateScmProject(fname)
+   let root = fnamemodify(fname, ':p:h' )
+   let name = fnamemodify(root, ':t')
+   let project = s:NewProject( root )
+   let project['ignore'] = [
+            \ '**/' . name . '/.git/',
+            \ '**/' . name . '/.hg/',
+            \ '**/' . name . '/Build/',
+            \ '**/' . name . '/build/',
+            \ '**/' . name . '/dfgbuild/' ]
+   let project['title'] = name
+
+   return project
+endfunc
+
 " Get the project that was read from @p projectfile. Read it if it isn't
 " already loaded.
 function! s:GetProject(projectfile)
@@ -225,6 +254,11 @@ function! s:GetProject(projectfile)
       " echom "LOADING"
       if (filereadable(prjfile))
          let prj = s:LoadProject(prjfile)
+         " echom "DEBUG: File Project: " . a:projectfile
+         let s:Projects[prjkey] = prj
+      elseif (isdirectory( prjfile ))
+         let prj = s:CreateScmProject(prjfile)
+         " echom "DEBUG: SCM Project: " . a:projectfile
          let s:Projects[prjkey] = prj
       endif
    endif
@@ -239,10 +273,16 @@ function! vimuiex#vxproject#GetBufferProject(bufnr)
    endif
    unlet prj
    let prjfile = s:FindProjectFile(fnamemodify(bufname(a:bufnr), ':p:h'))
-   if prjfile == ""
-      let prj = {}
-   else
+   if prjfile != ""
       let prj = s:GetProject(prjfile)
+   else
+      " echom "DEBUG: No project file: "
+      let scmdir = s:FindScmRoot( fnamemodify(bufname(a:bufnr), ':p:h') )
+      if scmdir != ""
+         prj = s:GetProject(scmdir)
+      else
+         let prj = {}
+      endif
    endif
    call setbufvar(a:bufnr, 'vxproject', prj)
    return prj
@@ -436,4 +476,3 @@ function! s:Test()
    endif
    call vimuiex#vxproject#SelectProjectFile()
 endfunc
-
