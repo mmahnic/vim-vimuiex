@@ -42,11 +42,21 @@ function! s:VIMUIEX_recentfile_AutoMRU(filename) " based on tmru.vim
       let files = g:VxPluginVar.vxrecentfile_files
       let idx = index(files, a:filename, 0, g:VxRecentFile_nocase)
       if idx == -1
-         let rfiles = []
-         for fnm in files
-            call add(rfiles, resolve(fnm))
-         endfor
-         let rfname = resolve(a:filename)
+         if 1
+            let rfiles = files
+         else
+            " FIXME: resolve takes too much time if a network fs is not available
+            let rfiles = []
+            for fnm in files
+               call add(rfiles, resolve(fnm))
+            endfor
+         endif
+         if 1
+            " FIXME: Ignore link conversion because of bad network speed
+            let rfname = a:filename
+         else
+            " let rfname = resolve(a:filename)
+         endif
          let idx = index(rfiles, rfname, 0, g:VxRecentFile_nocase)
       endif
       if idx == -1 && len(files) >= g:VxRecentFile_size

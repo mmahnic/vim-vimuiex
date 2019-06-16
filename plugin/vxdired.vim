@@ -57,11 +57,21 @@ function! s:VIMUIEX_dired_AutoMRU(filename) " based on tmru.vim
       let dirs = g:VxPluginVar.vxrecentfile_dirs
       let idx = index(dirs, dir, 0, g:VxRecentFile_nocase)
       if idx == -1
-         let rdirs = []
-         for fnm in dirs
-            call add(rdirs, resolve(fnm))
-         endfor
-         let rfname = resolve(dir)
+         if 1
+            let rdirs = dirs
+         else
+            " FIXME: resolve takes too much time if a network fs is not available
+            let rdirs = []
+            for fnm in dirs
+               call add(rdirs, resolve(fnm))
+            endfor
+         endif
+         if 1
+            " FIXME: Ignore link conversion because of bad network speed
+            let rfname = dir
+         else
+            " let rfname = resolve(dir)
+         endif
          let idx = index(rdirs, rfname, 0, g:VxRecentFile_nocase)
       endif
       if idx == -1 && len(dirs) >= g:VxRecentDir_size
