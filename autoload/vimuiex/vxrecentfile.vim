@@ -25,17 +25,28 @@ exec vxlib#plugin#MakeSID()
 
 let s:SHOWNFILES=[]
 function! s:GetRecentFiles()
+   " echom strftime("%M:%S") . "GetRecentFiles"
    let s:SHOWNFILES = []
    for item in g:VxPluginVar.vxrecentfile_files
-      call add(s:SHOWNFILES, fnamemodify(item, ':t') . "\t" . fnamemodify(item, ':p:~:h'))
+      if item =~ "^//"
+         " Avoid long network waits...
+         call add(s:SHOWNFILES, fnamemodify(item, ':t') . "\t" . item )
+      else
+         call add(s:SHOWNFILES, fnamemodify(item, ':t') . "\t" . fnamemodify(item, ':p:~:h'))
+      endif
    endfor
+   " echom strftime("%M:%S") . "GetRecentFiles end"
    return s:SHOWNFILES
 endfunc
 
 function! s:SelectFile_cb(index, winmode)
    let filename = s:SHOWNFILES[a:index]
    let fparts = split(filename, "\t")
-   let filename = fparts[1] . '/' . fparts[0]
+   if fparts[1] =~ "^//"
+      let filename = fparts[1]
+   else
+      let filename = fparts[1] . '/' . fparts[0]
+   endif
    let filename = fnamemodify(filename, ':p')
 
    call vxlib#cmd#Edit(filename, a:winmode)
@@ -57,6 +68,7 @@ endfunc
 
 function! vimuiex#vxrecentfile#VxOpenRecentFile()
    if has('popuplist')
+      " echom strftime("%M:%S") . "VxOpenRecentFile"
       let rslt=popuplist(s:GetRecentFiles(), 'Recent Files', {'columns': 1})
       if rslt.status == 'accept'
          call s:SelectFile_cb(rslt.current, '')

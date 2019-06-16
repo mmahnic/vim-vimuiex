@@ -199,6 +199,7 @@ function! s:PrepareGrepParams(word, range)
    let filter = split(a:range)
    let type = filter[0]
    let options = ['', '-s', '-n', '-i', '--max-count=' . g:vxoccur_match_limit]
+   call add( options, '-a' ) " 2015-02-17: cygwin suddenly treats CRLF files as binary :(
    let recurse = 0
 
    let saveic=&ignorecase
