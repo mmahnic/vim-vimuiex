@@ -1,6 +1,7 @@
 # vim: set fileencoding=utf-8 sw=4 sts=4 ts=8 et :vim
 
 import os, sys, re
+import subprocess as subp
 
 # Supported masks
 # *        any file in root directory; alt: /* TODO
@@ -189,27 +190,59 @@ class CFinder:
     def processFiles(self):
         roots = [self.basedir] # TODO: unhandled roots from sections with 'basedir='
         links = []
+        wqueue = []
         # pass 1
+        def addToQueue( rd, files ):
+            wqueue.append( ( rd, files ) )
+            if len(wqueue) > 100:
+                processQueue()
+        def processQueue():
+            for (rd, files) in wqueue:
+                self._classifyFiles(rd, files)
+            del wqueue[:] # must not create a new instance with 'wqueue=[]' !
+
+        # Using find instead of os.walk is *a lot* faster in cygwin.
+        # TODO: find link-dirs and add them to roots if they are acceptable
         for basedir in roots:
-            for root, dirs, files in os.walk(basedir):
-                rd = root.replace("\\", "/")
-                self._classifyFiles(rd, files)
+            skipdirs = "\( -name .git -o -iname Build -o -name dist \)"
+            cmd = """find '%s' \( -type d -a \( -type l -o %s \) -prune \) -o -type f -print""" % (basedir, skipdirs )
+            files = subp.check_output( cmd, shell=True ).split( "\n" )
+            files.sort()
+            print files
+            curdir = "---"
+            dirfiles = []
+            for pn in files:
+                (d, f) = os.path.split( pn )
+                if d != curdir:
+                    if len(dirfiles) > 0:
+                        addToQueue( curdir, dirfiles )
+                    curdir = d
+                    dirfiles = [f]
+                else:
+                    dirfiles.append( f )
 
-                # find dir-links to process in 2nd pass
-                for d in dirs:
-                    dd = "%s/%s" % (rd, d)
-                    if os.path.islink(dd):
-                        for sec in self.sections:
-                            accept = sec.dirAccepted(dd, islink=True)
-                            if accept:
-                                links.append(dd)
-                                break
+        # for basedir in roots:
+        #     for root, dirs, files in os.walk(basedir):
+        #         rd = root.replace("\\", "/")
+        #         addToQueue( rd, files )
 
-        # pass 2
-        for basedir in links:
-            for root, dirs, files in os.walk(basedir):
-                rd = root.replace("\\", "/")
-                self._classifyFiles(rd, files)
+        #         # find dir-links to process in 2nd pass
+        #         for d in dirs:
+        #             dd = "%s/%s" % (rd, d)
+        #             if os.path.islink(dd):
+        #                 for sec in self.sections:
+        #                     accept = sec.dirAccepted(dd, islink=True)
+        #                     if accept:
+        #                         links.append(dd)
+        #                         break
+
+        # # pass 2
+        # for basedir in links:
+        #     for root, dirs, files in os.walk(basedir):
+        #         rd = root.replace("\\", "/")
+        #         addToQueue( rd, files )
+
+        processQueue()
 
     def dump(self, writer):
         for sec in self.sections:
