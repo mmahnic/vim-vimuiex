@@ -739,6 +739,18 @@ function! s:InitVxShowCapture(pyListVar)
    exec 'python ' . a:pyListVar . '.hasTitles = True'
 endfunc
 
+let s:list_keymap = { 
+         \ 'j': { win -> vimuiex#vxpopup#down( win ) },
+         \ 'k': { win -> vimuiex#vxpopup#up( win ) },
+         \ "\<esc>" : { win -> popup_close( win ) }
+         \ }
+
+function! s:VxShowCapture_select( winid )
+   let lineno = vimuiex#vxpopup#get_current_line( a:winid )
+   call s:SelectItem_cb( lineno - 1 )
+   call popup_close( a:winid )
+endfunc
+
 " occurType, title [, saveHistory, historyItem]
 function! s:VxShowCapture(occurType, title, ...)
    let s:preview_on = 0
@@ -770,7 +782,17 @@ function! s:VxShowCapture(occurType, title, ...)
       let s:curHistItem = {} 
    endif
 
-   if has('popuplist')
+   if ( v:version >= 801 )
+      let showcapture_keymap = {
+               \ "\<cr>" : { win -> s:VxShowCapture_select( win ) }
+               \ }
+      let keymaps = [showcapture_keymap, s:list_keymap]
+      let winid = popup_dialog( items, #{
+               \ filter: { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) },
+               \ title: a:title,
+               \ cursorline: 1,
+               \ } )
+   elseif has('popuplist')
       let opts = { 'titles': '/' }
       let opts.highlight = s:capWord
       let opts.current = current
@@ -863,6 +885,16 @@ function! s:SelectHistory_cb(index)
    return 'q'
 endfunc
 
+function! s:VxSelectOccurHist_select( winid )
+   let lineno = vimuiex#vxpopup#get_current_line( a:winid )
+   call s:SelectHistory_cb( lineno - 1 )
+   call popup_close( a:winid )
+
+   let histItem = s:OccurHistory[0]
+   call s:VxShowCapture(histItem.type, histItem.title, 0, histItem)
+endfunc
+
+
 function! vimuiex#vxoccur#VxSelectOccurHist()
    if len(s:OccurHistory) < 1
       return
@@ -874,7 +906,17 @@ function! vimuiex#vxoccur#VxSelectOccurHist()
    endfor
 
    let s:ShowHistoryItems = 0
-   if has('popuplist')
+   if ( v:version >= 801 )
+      let showcapture_keymap = {
+               \ "\<cr>" : { win -> s:VxSelectOccurHist_select( win ) }
+               \ }
+      let keymaps = [showcapture_keymap, s:list_keymap]
+      let winid = popup_dialog( items, #{
+               \ filter: { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) },
+               \ title: "Activate results",
+               \ cursorline: 1,
+               \ } )
+   elseif has('popuplist')
       let rslt = popuplist(items, 'Activate results')
       if rslt.status == 'accept'
          call s:SelectHistory_cb(rslt.current)
