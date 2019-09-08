@@ -55,7 +55,12 @@ function s:GetBufOrderStr(lsline)
    endif
 endfunc
 
-function s:GetDisplayStr(lsline)
+function! s:IsOrderedByMru()
+   let order = s:bufOrderDef[s:bufOrder][0]
+   return order == 'm'
+endfunc
+
+function! s:GetDisplayStr(lsline)
    let b_st = matchstr(a:lsline, '^[^"]\+')
    let b_fn = matchstr(a:lsline, '"\zs.\{-}\ze"\s\+line \d\+\s*$')
    return b_st . fnamemodify(b_fn, ':t') . "\t" . fnamemodify(b_fn, ':h')
@@ -220,21 +225,63 @@ function! s:PulsBuferList()
    endif
 endfunc
 
-function! vimuiex#vxbuflist#VxBufListSelect()
-   if has('popuplist')
-      if ! get(g:plug_vxbuflist, 'use_internal', 0)
-         call s:PulsBuferList()
-      else
-         " use the internal buffer provider
-         let rslt = popuplist('buffers', 'Buffers', { 
-                  \ 'mru-list': g:VxPluginVar.vxbuflist_mru, 'sort': 'r',
-                  \ 'current': 1 } )
-         if rslt.status == 'accept'
-            call vxlib#cmd#GotoBuffer(0 + rslt.current, '')
-         endif
-      endif
+let s:list_keymap = { 
+         \ 'j': { win -> vimuiex#vxpopup#down( win ) },
+         \ 'k': { win -> vimuiex#vxpopup#up( win ) },
+         \ "\<esc>" : { win -> popup_close( win ) }
+         \ }
+
+function! s:PopupBufferList_select_buffer( winid )
+   let lineno = vimuiex#vxpopup#get_current_line( a:winid )
+   call s:SelectBuffer_cb( lineno - 1, '' )
+   call popup_close( a:winid )
+endfunc
+
+let s:buflist_keymap = {
+         \ "\<cr>" : { win -> s:PopupBufferList_select_buffer( win ) }
+         \ }
+
+" This version of popup uses the new popup* set of functions.
+function! s:BufListSelect_popup()
+   let keymaps = [s:buflist_keymap, s:list_keymap]
+   let winid = popup_dialog( s:GetBufferList(), #{
+            \ filter: { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) },
+            \ title: s:GetTitle(),
+            \ cursorline: 1,
+            \ } )
+   if s:IsOrderedByMru()
+      call vimuiex#vxpopup#select_line( winid, 2 )
+   endif
+endfunc
+
+" This version of popuplist was developed in C (more precisely with the
+" Minimal Object Oriented C Complier, mmoocc.py).  It defined a new Vim
+" function popuplist().
+function! s:BufListSelect_popuplist()
+   if !has('popuplist')
       return
    endif
+
+   if ! get(g:plug_vxbuflist, 'use_internal', 0)
+      call s:PulsBuferList()
+   else
+      " use the internal buffer provider
+      let rslt = popuplist('buffers', 'Buffers', { 
+               \ 'mru-list': g:VxPluginVar.vxbuflist_mru, 'sort': 'r',
+               \ 'current': 1 } )
+      if rslt.status == 'accept'
+         call vxlib#cmd#GotoBuffer(0 + rslt.current, '')
+      endif
+   endif
+endfunc
+
+" The initial version of the Popup List  was implemented in Python. It used
+" various backends for displaying the popup (curses, wxPython, custom C code).
+function! s:BufListSelect_popuplist_python()
+   if !has('python')
+      return
+   endif
+
    exec 'python def SNR(s): return s.replace("$SNR$", "' . s:SNR . '")'
 
 python << EOF
@@ -261,6 +308,22 @@ BufList.keymapNorm.setKey(r"os", SNR("vim:$SNR$ResortItems_cb()"))
 BufList.process(curindex=1)
 BufList=None
 EOF
+endfunc
 
+
+function! vimuiex#vxbuflist#VxBufListSelect()
+   if ( v:version >= 801 )
+      call s:BufListSelect_popup()
+      return
+   endif
+   if has('popuplist')
+      call s:BufListSelect_popuplist()
+      return
+   endif
+   if has('python') && !has('gui')
+      call s:BufListSelect_popuplist_python()
+      return
+   endif
+   echom "A popup list required by vxbuflist is not available."
 endfunc
 
