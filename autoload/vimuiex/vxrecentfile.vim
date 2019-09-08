@@ -66,14 +66,46 @@ function! s:SelectMarkedFiles_cb(marked, index, winmode)
    return 'q'
 endfunc
 
-function! vimuiex#vxrecentfile#VxOpenRecentFile()
+let s:list_keymap = { 
+         \ 'j': { win -> vimuiex#vxpopup#down( win ) },
+         \ 'k': { win -> vimuiex#vxpopup#up( win ) },
+         \ "\<esc>" : { win -> popup_close( win ) }
+         \ }
+
+function! s:OpenRecenFiles_select_file( winid )
+   let lineno = vimuiex#vxpopup#get_current_line( a:winid )
+   call s:SelectFile_cb( lineno - 1, '' )
+   call popup_close( a:winid )
+endfunc
+
+let s:buflist_keymap = {
+         \ "\<cr>" : { win -> s:OpenRecenFiles_select_file( win ) }
+         \ }
+
+
+" This version of popup uses the new popup* set of functions.
+function! s:OpenRecentFile_popup()
+   let keymaps = [s:buflist_keymap, s:list_keymap]
+   let winid = popup_dialog( s:GetRecentFiles(), #{
+            \ filter: { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) },
+            \ title: "Recent Files",
+            \ cursorline: 1,
+            \ } )
+endfunc
+
+" OLD: Uses the C popuplist function.
+function! s:OpenRecentFile_popuplist()
    if has('popuplist')
       " echom strftime("%M:%S") . "VxOpenRecentFile"
       let rslt=popuplist(s:GetRecentFiles(), 'Recent Files', {'columns': 1})
       if rslt.status == 'accept'
          call s:SelectFile_cb(rslt.current, '')
       endif
-   else
+endfunc
+
+" OLD: Uses the Python popuplist.
+function! s:OpenRecentFile_vxpopup()
+   if has('python') && !has('gui')
       call vimuiex#vxlist#VxPopup(s:GetRecentFiles(), 'Recent files', {
          \ 'optid': 'VxOpenRecentFile',
          \ 'callback': s:SNR . 'SelectMarkedFiles_cb({{M}}, {{i}}, '''')', 
@@ -89,3 +121,18 @@ function! vimuiex#vxrecentfile#VxOpenRecentFile()
    
 endfunc
 
+function! vimuiex#vxrecentfile#VxOpenRecentFile()
+   if ( v:version >= 801 )
+      call s:OpenRecentFile_popup()
+      return
+   endif
+   if has('popuplist')
+      call s:OpenRecentFile_popuplist()
+      return
+   endif
+   if has('python') && !has('gui')
+      call s:OpenRecentFile_vxpopup()
+      return
+   endif
+   echom "A popup list required by vxrecentfile is not available."
+endfunc
