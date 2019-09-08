@@ -254,7 +254,7 @@ function! s:BufListSelect_popup()
    endif
 endfunc
 
-" This version of popuplist was developed in C (more precisely with the
+" OLD: This version of popuplist was developed in C (more precisely with the
 " Minimal Object Oriented C Complier, mmoocc.py).  It defined a new Vim
 " function popuplist().
 function! s:BufListSelect_popuplist()
@@ -275,8 +275,9 @@ function! s:BufListSelect_popuplist()
    endif
 endfunc
 
-" The initial version of the Popup List  was implemented in Python. It used
-" various backends for displaying the popup (curses, wxPython, custom C code).
+" OLD: The initial version of the Popup List  was implemented in Python. It
+" used various backends for displaying the popup (curses, wxPython, custom C
+" code).
 function! s:BufListSelect_popuplist_python()
    if !has('python')
       return
