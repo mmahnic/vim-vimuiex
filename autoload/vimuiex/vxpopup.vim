@@ -54,3 +54,31 @@ function! vimuiex#vxpopup#get_current_line( winid )
    return line( '.', a:winid )
 endfunc
 
+let s:list_keymap = {
+         \ 'j': { win -> vimuiex#vxpopup#down( win ) },
+         \ 'k': { win -> vimuiex#vxpopup#up( win ) },
+         \ "\<esc>" : { win -> popup_close( win ) }
+         \ }
+
+function! vimuiex#vxpopup#popup_list( items, options )
+   let current = 1
+   let keymaps = [s:list_keymap]
+   if has_key( a:options, "vxcurrent" )
+      let current = a:options.vxcurrent
+      unlet a:options.vxcurrent
+      if type(current) != v:t_number
+         let current = 1
+      endif
+   endif
+   if has_key( a:options, "vxkeymap" )
+      let keymaps = a:options.vxkeymap + keymaps
+      unlet a:options.vxkeymap
+   endif
+   let a:options.filter = { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) }
+   let a:options.cursorline = 1
+   let winid = popup_dialog( a:items, a:options )
+   if current > 1
+      call vimuiex#vxpopup#select_line( winid, current )
+   endif
+   return winid
+endfunc

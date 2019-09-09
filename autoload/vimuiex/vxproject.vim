@@ -279,7 +279,7 @@ function! vimuiex#vxproject#GetBufferProject(bufnr)
       " echom "DEBUG: No project file: "
       let scmdir = s:FindScmRoot( fnamemodify(bufname(a:bufnr), ':p:h') )
       if scmdir != ""
-         prj = s:GetProject(scmdir)
+         let prj = s:GetProject(scmdir)
       else
          let prj = {}
       endif

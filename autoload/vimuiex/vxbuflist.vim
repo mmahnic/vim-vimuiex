@@ -225,12 +225,6 @@ function! s:PulsBuferList()
    endif
 endfunc
 
-let s:list_keymap = { 
-         \ 'j': { win -> vimuiex#vxpopup#down( win ) },
-         \ 'k': { win -> vimuiex#vxpopup#up( win ) },
-         \ "\<esc>" : { win -> popup_close( win ) }
-         \ }
-
 function! s:PopupBufferList_select_buffer( winid )
    let lineno = vimuiex#vxpopup#get_current_line( a:winid )
    call s:SelectBuffer_cb( lineno - 1, '' )
@@ -243,15 +237,11 @@ let s:buflist_keymap = {
 
 " This version of popup uses the new popup* set of functions.
 function! s:BufListSelect_popup()
-   let keymaps = [s:buflist_keymap, s:list_keymap]
-   let winid = popup_dialog( s:GetBufferList(), #{
-            \ filter: { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) },
+   let winid = vimuiex#vxpopup#popup_list( s:GetBufferList(), #{
             \ title: s:GetTitle(),
-            \ cursorline: 1,
+            \ vxkeymap: [s:buflist_keymap],
+            \ vxcurrent: s:IsOrderedByMru() ? 2 : 1
             \ } )
-   if s:IsOrderedByMru()
-      call vimuiex#vxpopup#select_line( winid, 2 )
-   endif
 endfunc
 
 " OLD: This version of popuplist was developed in C (more precisely with the
