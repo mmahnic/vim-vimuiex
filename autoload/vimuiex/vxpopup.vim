@@ -46,6 +46,25 @@ function! vimuiex#vxpopup#up( winid )
    call win_execute( a:winid, "normal! -" )
 endfunc
 
+function! vimuiex#vxpopup#page_down( winid )
+   call win_execute( a:winid, "normal! \<C-F>" )
+endfunc
+
+function! vimuiex#vxpopup#page_up( winid )
+   call win_execute( a:winid, "normal! \<C-B>" )
+endfunc
+
+function! vimuiex#vxpopup#scroll_left( winid )
+   " call win_execute( a:winid, "normal! 0" )
+   call popup_setoptions( a:winid, #{ wrap: 0 } )
+endfunc
+
+function! vimuiex#vxpopup#scroll_right( winid )
+   " call win_execute( a:winid, "normal! $" )
+   " FIXME: workaround: can not scroll l/r, so we wrap to see the whole line, instead.
+   call popup_setoptions( a:winid, #{ wrap: 1 } )
+endfunc
+
 function! vimuiex#vxpopup#select_line( winid, line )
    call win_execute( a:winid, ":" . a:line )
 endfunc
@@ -57,6 +76,10 @@ endfunc
 let s:list_keymap = {
          \ 'j': { win -> vimuiex#vxpopup#down( win ) },
          \ 'k': { win -> vimuiex#vxpopup#up( win ) },
+         \ 'h': { win -> vimuiex#vxpopup#scroll_left( win ) },
+         \ 'l': { win -> vimuiex#vxpopup#scroll_right( win ) },
+         \ 'n': { win -> vimuiex#vxpopup#page_down( win ) },
+         \ 'p': { win -> vimuiex#vxpopup#page_up( win ) },
          \ "\<esc>" : { win -> popup_close( win ) }
          \ }
 
@@ -74,6 +97,21 @@ function! vimuiex#vxpopup#popup_list( items, options )
       let keymaps = a:options.vxkeymap + keymaps
       unlet a:options.vxkeymap
    endif
+
+   let maxwidth = &columns - 6
+   if has_key( a:options, "maxwidth" ) && a:options.maxwidth < maxwidth
+      let maxwidth = a:options.maxwidth
+   endif
+   let a:options.maxwidth = maxwidth
+
+   let maxheight = &lines - 6
+   if has_key( a:options, "maxheight" ) && a:options.maxheight < maxheight
+      let maxheight = a:options.maxheight
+   endif
+   let a:options.maxheight = maxheight
+
+   let a:options.wrap = 0
+
    let a:options.filter = { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) }
    let a:options.cursorline = 1
    let winid = popup_dialog( a:items, a:options )
