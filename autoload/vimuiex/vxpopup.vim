@@ -23,9 +23,12 @@
 "       \ cursorline: 1,
 "       \ } )
 function! vimuiex#vxpopup#key_filter( winid, key, keymaps )
-   for km in a:keymaps
-      if has_key( km, a:key )
-         let FilterFunc = km[a:key] 
+   for Km in a:keymaps
+      if type( Km ) == v:t_func
+         " TODO: the handler should tell if keymap processing should continue
+         call Km( a:winid, a:key )
+      elseif has_key( Km, a:key )
+         let FilterFunc = Km[a:key]
          if type( FilterFunc ) == v:t_func
             call FilterFunc( a:winid )
          elseif type( FilterFunc ) == v:t_string
@@ -80,6 +83,7 @@ let s:list_keymap = {
          \ 'l': { win -> vimuiex#vxpopup#scroll_right( win ) },
          \ 'n': { win -> vimuiex#vxpopup#page_down( win ) },
          \ 'p': { win -> vimuiex#vxpopup#page_up( win ) },
+         \ 'f': { win -> s:popup_filter( win ) },
          \ "\<esc>" : { win -> popup_close( win ) }
          \ }
 
@@ -118,5 +122,66 @@ function! vimuiex#vxpopup#popup_list( items, options )
    if current > 1
       call vimuiex#vxpopup#select_line( winid, current )
    endif
+   call setwinvar( winid, "vxpopup_list", #{ filter: "" } )
    return winid
+endfunc
+
+let s:filter_keymap = {
+         \ "\<esc>" : { win -> popup_close( win ) },
+         \ "\<backspace>" : { win -> s:filter_remove_text( win ) }
+         \ }
+
+function! s:filter_get_parent_list( winid )
+   let vxfilter = getwinvar( a:winid, "vxpopup_filter" )
+   if type( vxfilter ) != v:t_dict
+      return 0
+   endif
+   let vxlist = getwinvar( vxfilter.parent, "vxpopup_list" )
+   if type( vxlist ) != v:t_dict
+      return 0
+   endif
+   return vxlist
+endfunc
+
+function! s:filter_append_text( winid, key )
+   if a:key < " "
+      return
+   endif
+   let vxlist = s:filter_get_parent_list( a:winid )
+   if type( vxlist ) != v:t_dict
+      return
+   endif
+   let vxlist.filter .= a:key
+   call popup_settext( a:winid, vxlist.filter )
+endfunc
+
+function! s:filter_remove_text( winid )
+   let vxlist = s:filter_get_parent_list( a:winid )
+   if type( vxlist ) != v:t_dict
+      return
+   endif
+   if strchars(vxlist.filter) > 0
+      let vxlist.filter = strcharpart( vxlist.filter, 0, strchars(vxlist.filter) - 1 )
+      call popup_settext( a:winid, vxlist.filter )
+   endif
+endfunc
+
+function! s:popup_filter( winid )
+   let basepos = popup_getpos( a:winid )
+   let baseopts = popup_getoptions( a:winid )
+   let vxlist = getwinvar( a:winid, "vxpopup_list" )
+   let content = type(vxlist) == v:t_dict ? vxlist.filter : ""
+   let keymaps = [s:filter_keymap, { win, key -> s:filter_append_text( win, key ) }]
+   let fltid = popup_create( content, #{
+            \ filter:  { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) },
+            \ line: basepos.line + basepos.height - 1,
+            \ col: basepos.col + 2 ,
+            \ height: 1,
+            \ width: basepos.width > 32 ? 28 : basepos.width - 4,
+            \ maxwidth: basepos.width - 4,
+            \ minwidth: basepos.width > 16 ? 12 : basepos.width - 4,
+            \ wrap: 0,
+            \ zindex: baseopts.zindex + 1
+            \ } )
+   call setwinvar( fltid, "vxpopup_filter", #{ parent: a:winid } )
 endfunc
