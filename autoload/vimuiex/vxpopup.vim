@@ -122,15 +122,35 @@ function! vimuiex#vxpopup#popup_list( items, options )
    if current > 1
       call vimuiex#vxpopup#select_line( winid, current )
    endif
-   call setwinvar( winid, "vxpopup_list", #{ filter: "" } )
+   call setwinvar( winid, "vxpopup_list", #{ windowid: winid,  content: a:items, selector: "" } )
    return winid
+endfunc
+
+" Set the content of the popup list to the items that match the selector.
+function! s:popup_list_update_content( vxpopup_list )
+   let vxlist = a:vxpopup_list
+   if type(vxlist) != v:t_dict
+      echom "No list "
+      return
+   endif
+   let items = []
+   let select = vxlist.selector
+   for it in vxlist.content
+      if stridx( it, select ) >= 0
+         call add( items, it )
+         " TODO: remember item mapping!
+      endif
+   endfor
+   call popup_settext( vxlist.windowid, items )
 endfunc
 
 let s:filter_keymap = {
          \ "\<esc>" : { win -> popup_close( win ) },
+         \ "\<tab>" : { win -> popup_close( win ) },
          \ "\<backspace>" : { win -> s:filter_remove_text( win ) }
          \ }
 
+" Get the vxpopup_list variable form the master popup window.
 function! s:filter_get_parent_list( winid )
    let vxfilter = getwinvar( a:winid, "vxpopup_filter" )
    if type( vxfilter ) != v:t_dict
@@ -143,34 +163,53 @@ function! s:filter_get_parent_list( winid )
    return vxlist
 endfunc
 
-function! s:filter_append_text( winid, key )
+function! s:filter_append_text( fltwinid, key )
    if a:key < " "
       return
    endif
-   let vxlist = s:filter_get_parent_list( a:winid )
+   let vxlist = s:filter_get_parent_list( a:fltwinid )
    if type( vxlist ) != v:t_dict
       return
    endif
-   let vxlist.filter .= a:key
-   call popup_settext( a:winid, vxlist.filter )
+   let vxlist.selector .= a:key
+   call popup_settext( a:fltwinid, vxlist.selector )
+   call s:popup_list_update_content( vxlist )
+   call s:filter_update_position( a:fltwinid, vxlist.windowid )
 endfunc
 
-function! s:filter_remove_text( winid )
-   let vxlist = s:filter_get_parent_list( a:winid )
+function! s:filter_remove_text( fltwinid )
+   let vxlist = s:filter_get_parent_list( a:fltwinid )
    if type( vxlist ) != v:t_dict
       return
    endif
-   if strchars(vxlist.filter) > 0
-      let vxlist.filter = strcharpart( vxlist.filter, 0, strchars(vxlist.filter) - 1 )
-      call popup_settext( a:winid, vxlist.filter )
+   if strchars(vxlist.selector) > 0
+      let vxlist.selector = strcharpart( vxlist.selector, 0, strchars(vxlist.selector) - 1 )
+      call popup_settext( a:fltwinid, vxlist.selector )
+      call s:popup_list_update_content( vxlist )
+      call s:filter_update_position( a:fltwinid, vxlist.windowid )
    endif
 endfunc
 
-function! s:popup_filter( winid )
-   let basepos = popup_getpos( a:winid )
-   let baseopts = popup_getoptions( a:winid )
-   let vxlist = getwinvar( a:winid, "vxpopup_list" )
-   let content = type(vxlist) == v:t_dict ? vxlist.filter : ""
+function! s:filter_update_position( fltwinid, lstwinid )
+   let basepos = popup_getpos( a:lstwinid )
+   let baseopts = popup_getoptions( a:lstwinid )
+   call popup_move( a:fltwinid, #{ 
+            \ line: basepos.line + basepos.height - 1,
+            \ col: basepos.col + 2 ,
+            \ height: 1,
+            \ width: basepos.width > 32 ? 28 : basepos.width - 4,
+            \ maxwidth: basepos.width - 4,
+            \ minwidth: basepos.width > 16 ? 12 : basepos.width - 4,
+            \ wrap: 0,
+            \ zindex: baseopts.zindex + 1
+            \ })
+endfunc
+
+function! s:popup_filter( lstwinid )
+   let basepos = popup_getpos( a:lstwinid )
+   let baseopts = popup_getoptions( a:lstwinid )
+   let vxlist = getwinvar( a:lstwinid, "vxpopup_list" )
+   let content = type(vxlist) == v:t_dict ? vxlist.selector : ""
    let keymaps = [s:filter_keymap, { win, key -> s:filter_append_text( win, key ) }]
    let fltid = popup_create( content, #{
             \ filter:  { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) },
@@ -183,5 +222,5 @@ function! s:popup_filter( winid )
             \ wrap: 0,
             \ zindex: baseopts.zindex + 1
             \ } )
-   call setwinvar( fltid, "vxpopup_filter", #{ parent: a:winid } )
+   call setwinvar( fltid, "vxpopup_filter", #{ parent: a:lstwinid } )
 endfunc
