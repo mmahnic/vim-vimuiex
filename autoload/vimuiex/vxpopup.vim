@@ -72,8 +72,20 @@ function! vimuiex#vxpopup#select_line( winid, line )
    call win_execute( a:winid, ":" . a:line )
 endfunc
 
+" TODO: rename to get_current_index, return line()-1
 function! vimuiex#vxpopup#get_current_line( winid )
-   return line( '.', a:winid )
+   let curidx = line( '.', a:winid ) - 1
+   let vxlist = getwinvar( a:winid, "vxpopup_list" )
+   if type( vxlist ) != v:t_dict
+      return curidx + 1
+   endif
+   if vxlist.selector == ""
+      return curidx + 1
+   endif
+   if len(vxlist.selected) == 0 || curidx >= len(vxlist.selected)
+      return -1
+   endif
+   return vxlist.selected[curidx] + 1
 endfunc
 
 let s:list_keymap = {
@@ -118,11 +130,18 @@ function! vimuiex#vxpopup#popup_list( items, options )
 
    let a:options.filter = { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) }
    let a:options.cursorline = 1
+   let a:options.hidden = 1
    let winid = popup_dialog( a:items, a:options )
    if current > 1
       call vimuiex#vxpopup#select_line( winid, current )
    endif
-   call setwinvar( winid, "vxpopup_list", #{ windowid: winid,  content: a:items, selector: "" } )
+   call setwinvar( winid, "vxpopup_list", #{
+            \ windowid: winid,
+            \ content: a:items,
+            \ selector: "",
+            \ selected: []
+            \ } )
+   call popup_show( winid )
    return winid
 endfunc
 
@@ -130,18 +149,26 @@ endfunc
 function! s:popup_list_update_content( vxpopup_list )
    let vxlist = a:vxpopup_list
    if type(vxlist) != v:t_dict
-      echom "No list "
       return
    endif
    let items = []
+   let selected = []
    let select = vxlist.selector
-   for it in vxlist.content
-      if stridx( it, select ) >= 0
-         call add( items, it )
-         " TODO: remember item mapping!
-      endif
-   endfor
-   call popup_settext( vxlist.windowid, items )
+   if select == ""
+      let vxlist.selected = selected
+      call popup_settext( vxlist.windowid, vxlist.content )
+   else
+      let idx = 0
+      for it in vxlist.content
+         if stridx( it, select ) >= 0
+            call add( items, it )
+            call add( selected, idx )
+         endif
+         let idx += 1
+      endfor
+      let vxlist.selected = selected
+      call popup_settext( vxlist.windowid, items )
+   endif
 endfunc
 
 let s:filter_keymap = {
