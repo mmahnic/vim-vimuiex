@@ -147,12 +147,13 @@ endfunc
 let s:filter_keymap = {
          \ "\<esc>" : { win -> popup_close( win ) },
          \ "\<tab>" : { win -> popup_close( win ) },
-         \ "\<backspace>" : { win -> s:filter_remove_text( win ) }
+         \ "\<backspace>" : { win -> s:filter_remove_text( win ) },
+         \ "\<cr>" : { win -> s:filter_forward_key_to_parent( win, "\<cr>" ) }
          \ }
 
 " Get the vxpopup_list variable form the master popup window.
-function! s:filter_get_parent_list( winid )
-   let vxfilter = getwinvar( a:winid, "vxpopup_filter" )
+function! s:filter_get_parent_list( fltwinid )
+   let vxfilter = getwinvar( a:fltwinid, "vxpopup_filter" )
    if type( vxfilter ) != v:t_dict
       return 0
    endif
@@ -187,6 +188,24 @@ function! s:filter_remove_text( fltwinid )
       call popup_settext( a:fltwinid, vxlist.selector )
       call s:popup_list_update_content( vxlist )
       call s:filter_update_position( a:fltwinid, vxlist.windowid )
+   endif
+endfunc
+
+function! s:filter_forward_key_to_parent( fltwinid, key )
+   let vxlist = s:filter_get_parent_list( a:fltwinid )
+   if type( vxlist ) != v:t_dict
+      return
+   endif
+   let options = popup_getoptions( vxlist.windowid )
+   if type( options.filter ) == v:t_func
+      let F = options.filter
+      call F( vxlist.windowid, a:key )
+
+      " close the filter if the parent closes
+      let vxlist = s:filter_get_parent_list( a:fltwinid )
+      if type( vxlist ) != v:t_dict
+         call popup_close( a:fltwinid )
+      endif
    endif
 endfunc
 
