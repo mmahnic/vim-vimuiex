@@ -79,13 +79,11 @@ function! vimuiex#vxpopup#get_current_line( winid )
    if type( vxlist ) != v:t_dict
       return curidx + 1
    endif
-   if vxlist.selector == ""
-      return curidx + 1
+   let globalIndex = s:map_visible_to_global( vxlist, curidx )
+   if globalIndex > 0
+      return globalIndex + 1
    endif
-   if len(vxlist.selected) == 0 || curidx >= len(vxlist.selected)
-      return -1
-   endif
-   return vxlist.selected[curidx] + 1
+   return globalIndex
 endfunc
 
 let s:list_keymap = {
@@ -143,6 +141,36 @@ function! vimuiex#vxpopup#popup_list( items, options )
             \ } )
    call popup_show( winid )
    return winid
+endfunc
+
+" global -> displayed -> visible
+" global: all the available items
+" displayed: the items that match the selector are displayed
+" visible: the visible part of the list
+
+function! s:map_global_to_visible( vxlist, globalIndex )
+   if a:vxlist.selector == ""
+      return a:globalIndex
+   endif
+   if len(a:vxlist.selected) == 0
+      return -1
+   endif
+   for idx in a:vxlist.selected
+      if idx >= a:globalIndex
+         return idx
+      endif
+   endfor
+   return a:vxlist.selected[-1]
+endfunc
+
+function! s:map_visible_to_global( vxlist, visibleIndex )
+   if a:vxlist.selector == ""
+      return a:visibleIndex
+   endif
+   if len(a:vxlist.selected) == 0 || a:visibleIndex >= len(a:vxlist.selected)
+      return -1
+   endif
+   return a:vxlist.selected[a:visibleIndex]
 endfunc
 
 " Set the content of the popup list to the items that match the selector.
