@@ -100,45 +100,52 @@ let s:list_keymap = {
 function! vimuiex#vxpopup#popup_list( items, options )
    let current = 1
    let keymaps = [s:list_keymap]
-   if has_key( a:options, "vxcurrent" )
+   if has_key( a:options, 'vxcurrent' )
       let current = a:options.vxcurrent
       unlet a:options.vxcurrent
       if type(current) != v:t_number
          let current = 1
       endif
    endif
-   if has_key( a:options, "vxkeymap" )
+   if has_key( a:options, 'vxkeymap' )
       let keymaps = a:options.vxkeymap + keymaps
       unlet a:options.vxkeymap
    endif
 
    let maxwidth = &columns - 6
-   if has_key( a:options, "maxwidth" ) && a:options.maxwidth < maxwidth
+   if has_key( a:options, 'maxwidth' ) && a:options.maxwidth < maxwidth
       let maxwidth = a:options.maxwidth
    endif
    let a:options.maxwidth = maxwidth
 
    let maxheight = &lines - 6
-   if has_key( a:options, "maxheight" ) && a:options.maxheight < maxheight
+   if has_key( a:options, 'maxheight' ) && a:options.maxheight < maxheight
       let maxheight = a:options.maxheight
    endif
    let a:options.maxheight = maxheight
+
+   let selector = ''
+   if has_key( a:options, 'selector' )
+      let selector = a:options['selector']
+   endif
 
    let a:options.wrap = 0
 
    let a:options.filter = { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) }
    let a:options.cursorline = 1
    let a:options.hidden = 1
-   let winid = popup_dialog( a:items, a:options )
-   if current > 1
-      call vimuiex#vxpopup#select_line( winid, current )
-   endif
-   call setwinvar( winid, "vxpopup_list", #{
+   let winid = popup_dialog( "", a:options )
+   let vxlist = #{
             \ windowid: winid,
             \ content: a:items,
-            \ selector: "",
-            \ selected: []
-            \ } )
+            \ selector: selector
+            \ }
+   call setwinvar( winid, 'vxpopup_list', vxlist )
+   call s:popup_list_update_content( vxlist )
+   if current > 1
+      let index = s:map_global_to_visible( vxlist, current )
+      call vimuiex#vxpopup#select_line( winid, index )
+   endif
    call popup_show( winid )
    return winid
 endfunc
