@@ -103,6 +103,56 @@ function! vimuiex#vxpopup#get_current_line( winid )
    return globalIndex
 endfunc
 
+" A matcher that matches the words defined by the selector.
+" None of the words with '-' prefix must be found.
+" All words with '+' prefix and words without prefix must be found.
+" To find the word '-' use '+-'.
+function! vimuiex#vxpopup#create_word_matcher()
+   " words: pairs [ word, 1/0 ]; '-w' -> ['w', 0], '+w' -> ['w', 1], ohter -> ['w', 1]
+   " pluscount: number of required words (second element is 1)
+   let matcher = #{ words: [], pluscount: 0 }
+
+   function! matcher.set_selector( selector )
+      let parts = split( a:selector, '\s\+')
+      let words = []
+      for wrd in parts
+         if wrd[0] == '-'
+            if len(wrd) > 1
+               call add( words, [wrd[1:], 0] )
+            endif
+         elseif wrd[0] == '+'
+            if len(wrd) > 1
+               call add( words, [wrd[1:], 1] )
+            endif
+         else
+            call add( words, [wrd, 1] )
+         endif
+      endfor
+      let self.words = words
+      let self.pluscount = 0
+      for wrd in self.words
+         if wrd[1] > 0
+            let self.pluscount += 1
+         endif
+      endfor
+   endfunc
+
+   function! matcher.item_matches( text )
+      let pluscount = 0
+      for wrd_on in self.words
+         if stridx( a:text, wrd_on[0] ) >= 0
+            if wrd_on[1] < 1
+               return v:false
+            endif
+            let pluscount += 1
+         endif
+      endfor
+      return pluscount == self.pluscount
+   endfunc
+
+   return matcher
+endfunc
+
 let s:list_keymap = {
          \ 'j': { win -> vimuiex#vxpopup#down( win ) },
          \ 'k': { win -> vimuiex#vxpopup#up( win ) },
@@ -141,9 +191,16 @@ function! vimuiex#vxpopup#popup_list( items, options )
    endif
    let a:options.maxheight = maxheight
 
-   let selector = ''
    if has_key( a:options, 'vxselector' )
       let selector = a:options['vxselector']
+   else
+      let selector = ''
+   endif
+
+   if has_key( a:options, 'vxmatcher' )
+      let matcher = a:options['vxmatcher']
+   else
+      let matcher = vimuiex#vxpopup#create_word_matcher()
    endif
 
    let a:options.wrap = 0
@@ -155,7 +212,8 @@ function! vimuiex#vxpopup#popup_list( items, options )
    let vxlist = #{
             \ windowid: winid,
             \ content: a:items,
-            \ selector: selector
+            \ selector: selector,
+            \ matcher: matcher
             \ }
    call setwinvar( winid, 'vxpopup_list', vxlist )
    call s:popup_list_update_content( vxlist )
@@ -205,14 +263,15 @@ function! s:popup_list_update_content( vxpopup_list )
    endif
    let items = []
    let selected = []
-   let select = vxlist.selector
-   if select == ""
+   let select_expr = vxlist.selector
+   if select_expr == ""
       let vxlist.selected = selected
       call popup_settext( vxlist.windowid, vxlist.content )
    else
+      call vxlist.matcher.set_selector( select_expr )
       let idx = 0
       for it in vxlist.content
-         if stridx( it, select ) >= 0
+         if vxlist.matcher.item_matches( it )
             call add( items, it )
             call add( selected, idx )
          endif
