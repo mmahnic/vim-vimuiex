@@ -65,11 +65,13 @@ function! vimuiex#vxpopup#up( winid )
 endfunc
 
 function! vimuiex#vxpopup#page_down( winid )
-   call win_execute( a:winid, "normal! \<C-F>" )
+   let pos = popup_getpos( a:winid )
+   call win_execute( a:winid, "normal! " . pos.core_height . "j" )
 endfunc
 
 function! vimuiex#vxpopup#page_up( winid )
-   call win_execute( a:winid, "normal! \<C-B>" )
+   let pos = popup_getpos( a:winid )
+   call win_execute( a:winid, "normal! " . pos.core_height . "k" )
 endfunc
 
 function! vimuiex#vxpopup#scroll_left( winid )
