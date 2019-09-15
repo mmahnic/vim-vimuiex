@@ -6,11 +6,22 @@
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
 
-" A generic handler for popup window filters with actions defined in a list of
-" dictionaries.
-" The parameter keymaps is a list of dictionaries of <key, function> pairs
-" where the function accepts the parameter winid as in filter option of
+" A generic handler for (modal) popup window filters with actions defined in
+" `keymaps`, a list of dictionaries or functions.
+"
+" If an element of the list is a dictionary its elements are <key, function>
+" pairs where the function accepts the parameter winid as in filter option of
 " popup_create.  The function element can be of type string or funcref.
+"
+" If an element of the list is a function, it behaves the same as a normal
+" popup filter function.  If it returns v:true, key processing is stopped and
+" no futher elements form the `keymaps` list are processed.
+" NOTE: this will cause problems if key-sequence disambiguation is introduced.
+"
+" This design enables us to compose keymaps from smaller keymaps and to
+" override mappings of the default keymaps.
+"
+" `key_filter` always returns v:true. See implications in `popup-filter` help.
 "
 " Example:
 "    let keymaps = [ {
@@ -23,12 +34,16 @@
 "       \ cursorline: 1,
 "       \ } )
 function! vimuiex#vxpopup#key_filter( winid, key, keymaps )
-   for Km in a:keymaps
-      if type( Km ) == v:t_func
-         " TODO: the handler should tell if keymap processing should continue
-         call Km( a:winid, a:key )
-      elseif has_key( Km, a:key )
-         let FilterFunc = Km[a:key]
+   for Keymap in a:keymaps
+      if type( Keymap ) == v:t_func
+         " Keymap is a filter-like function. If it handles the key (returns
+         " true), stop processing further keymaps.
+         if Keymap( a:winid, a:key )
+            break
+         endif
+      elseif has_key( Keymap, a:key )
+         " Keymap is a dictionary and an entry for the key is present in it.
+         let FilterFunc = Keymap[a:key]
          if type( FilterFunc ) == v:t_func
             call FilterFunc( a:winid )
          elseif type( FilterFunc ) == v:t_string
@@ -125,8 +140,8 @@ function! vimuiex#vxpopup#popup_list( items, options )
    let a:options.maxheight = maxheight
 
    let selector = ''
-   if has_key( a:options, 'selector' )
-      let selector = a:options['selector']
+   if has_key( a:options, 'vxselector' )
+      let selector = a:options['vxselector']
    endif
 
    let a:options.wrap = 0
@@ -206,13 +221,6 @@ function! s:popup_list_update_content( vxpopup_list )
    endif
 endfunc
 
-let s:filter_keymap = {
-         \ "\<esc>" : { win -> popup_close( win ) },
-         \ "\<tab>" : { win -> popup_close( win ) },
-         \ "\<backspace>" : { win -> s:filter_remove_text( win ) },
-         \ "\<cr>" : { win -> s:filter_forward_key_to_parent( win, "\<cr>" ) }
-         \ }
-
 " Get the vxpopup_list variable form the master popup window.
 function! s:filter_get_parent_list( fltwinid )
    let vxfilter = getwinvar( a:fltwinid, "vxpopup_filter" )
@@ -228,16 +236,17 @@ endfunc
 
 function! s:filter_append_text( fltwinid, key )
    if a:key < " "
-      return
+      return v:false
    endif
    let vxlist = s:filter_get_parent_list( a:fltwinid )
    if type( vxlist ) != v:t_dict
-      return
+      return v:false
    endif
    let vxlist.selector .= a:key
    call popup_settext( a:fltwinid, vxlist.selector )
    call s:popup_list_update_content( vxlist )
    call s:filter_update_position( a:fltwinid, vxlist.windowid )
+   return v:true
 endfunc
 
 function! s:filter_remove_text( fltwinid )
@@ -285,6 +294,13 @@ function! s:filter_update_position( fltwinid, lstwinid )
             \ zindex: baseopts.zindex + 1
             \ })
 endfunc
+
+let s:filter_keymap = {
+         \ "\<esc>" : { win -> popup_close( win ) },
+         \ "\<tab>" : { win -> popup_close( win ) },
+         \ "\<backspace>" : { win -> s:filter_remove_text( win ) },
+         \ "\<cr>" : { win -> s:filter_forward_key_to_parent( win, "\<cr>" ) }
+         \ }
 
 function! s:popup_filter( lstwinid )
    let basepos = popup_getpos( a:lstwinid )
