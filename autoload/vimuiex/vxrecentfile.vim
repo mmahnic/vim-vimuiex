@@ -82,7 +82,8 @@ let s:recent_keymap = {
 function! s:OpenRecentFile_popup()
    let winid = vimuiex#vxpopup#popup_list( s:GetRecentFiles(), #{
             \ title: "Recent Files",
-            \ vxkeymap: [s:recent_keymap]
+            \ vxkeymap: [s:recent_keymap],
+            \ vxcolumns: 2
             \ } )
 endfunc
 

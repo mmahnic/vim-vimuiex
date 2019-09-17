@@ -159,6 +159,22 @@ function! s:vxlist_current_index() dict
    return s:map_visible_to_global( self, curidx )
 endfunc
 
+function! s:popup_get_column_widths( items, numcols, maxwidth )
+   let maxw = 6
+   for it in a:items
+      " TODO: add support for more columns
+      let pos = stridx( it, "\t" )
+      if pos > maxw
+         let maxw = pos
+         if maxw >= a:maxwidth
+            let maxw = a:maxwidth
+            break
+         endif
+      endif
+   endfor
+   return [maxw + 2, 2]
+endfunc
+
 function! vimuiex#vxpopup#popup_list( items, options )
    let current = 0
    let keymaps = [s:list_keymap]
@@ -186,20 +202,26 @@ function! vimuiex#vxpopup#popup_list( items, options )
    endif
    let a:options.maxheight = maxheight
 
+   " The input text for the matcher.
    if has_key( a:options, 'vxselector' )
-      let selector = a:options['vxselector']
+      let selector = a:options.vxselector
    else
       let selector = ''
    endif
 
+   " The matcher that will narrow the list of displayed items.
    if has_key( a:options, 'vxmatcher' )
-      let matcher = a:options['vxmatcher']
+      let matcher = a:options.vxmatcher
    else
       let matcher = vimuiex#vxpopup#create_word_matcher()
    endif
 
-   " TODO: process the items and setlocal vartabstop=M,N,2 to align columns!
-   " M and N are the widths of the first and second columns.
+   " The number of columns.
+   if has_key( a:options, 'vxcolumns' )
+      let columns = a:options.vxcolumns
+   else
+      let columns = 1
+   endif
 
    let a:options.wrap = 0
 
@@ -210,17 +232,37 @@ function! vimuiex#vxpopup#popup_list( items, options )
    let vxlist = #{
             \ windowid: winid,
             \ content: a:items,
+            \ columns: columns,
             \ selector: selector,
             \ matcher: matcher,
             \ select_item: funcref( 's:vxlist_select_item' ),
             \ get_current_index: funcref( 's:vxlist_current_index' )
             \ }
+
    call setwinvar( winid, 'vxpopup_list', vxlist )
    call s:popup_list_update_content( vxlist )
+
    if current > 0
       let index = s:map_global_to_visible( vxlist, current )
       call vxlist.select_item( index )
    endif
+
+   if columns > 1
+      " The actual width of the window depends on the visible items and its
+      " use is unreliable for limiting the column width. We depend on maxwidth
+      " and &columns, instead.
+      if has_key(a:options, 'maxwidth')
+         let maxcolwidth = a:options.maxwidth / 3
+      else
+         let maxcolwidth = &columns / 3
+      endif
+      if maxcolwidth < 8
+         let maxcolwidth = 8
+      endif
+      let colwidths = s:popup_get_column_widths( a:items, columns, maxcolwidth )
+      call win_execute( winid, 'setlocal vartabstop=' . join( colwidths, ',' ) )
+   endif
+
    call popup_show( winid )
    return winid
 endfunc
