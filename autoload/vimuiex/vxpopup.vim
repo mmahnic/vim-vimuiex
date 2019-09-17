@@ -85,21 +85,17 @@ function! vimuiex#vxpopup#scroll_right( winid )
    call popup_setoptions( a:winid, #{ wrap: 1 } )
 endfunc
 
-function! vimuiex#vxpopup#select_line( winid, line )
-   call win_execute( a:winid, ":" . a:line )
+function! vimuiex#vxpopup#select_item( winid, itemIndex )
+   call win_execute( a:winid, ":" . (a:itemIndex + 1) )
 endfunc
 
-" TODO: rename to get_current_index, return line()-1
-function! vimuiex#vxpopup#get_current_line( winid )
+function! vimuiex#vxpopup#get_current_index( winid )
    let curidx = line( '.', a:winid ) - 1
    let vxlist = getwinvar( a:winid, "vxpopup_list" )
    if type( vxlist ) != v:t_dict
-      return curidx + 1
+      return curidx
    endif
    let globalIndex = s:map_visible_to_global( vxlist, curidx )
-   if globalIndex > 0
-      return globalIndex + 1
-   endif
    return globalIndex
 endfunc
 
@@ -165,13 +161,13 @@ let s:list_keymap = {
          \ }
 
 function! vimuiex#vxpopup#popup_list( items, options )
-   let current = 1
+   let current = 0
    let keymaps = [s:list_keymap]
    if has_key( a:options, 'vxcurrent' )
       let current = a:options.vxcurrent
       unlet a:options.vxcurrent
       if type(current) != v:t_number
-         let current = 1
+         let current = 0
       endif
    endif
    if has_key( a:options, 'vxkeymap' )
@@ -203,6 +199,9 @@ function! vimuiex#vxpopup#popup_list( items, options )
       let matcher = vimuiex#vxpopup#create_word_matcher()
    endif
 
+   " TODO: process the items and setlocal vartabstop=M,N,2 to align columns!
+   " M and N are the widths of the first and second columns.
+
    let a:options.wrap = 0
 
    let a:options.filter = { win, key -> vimuiex#vxpopup#key_filter( win, key, keymaps ) }
@@ -217,9 +216,9 @@ function! vimuiex#vxpopup#popup_list( items, options )
             \ }
    call setwinvar( winid, 'vxpopup_list', vxlist )
    call s:popup_list_update_content( vxlist )
-   if current > 1
+   if current > 0
       let index = s:map_global_to_visible( vxlist, current )
-      call vimuiex#vxpopup#select_line( winid, index )
+      call vimuiex#vxpopup#select_item( winid, index )
    endif
    call popup_show( winid )
    return winid

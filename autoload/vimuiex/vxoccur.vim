@@ -740,8 +740,8 @@ function! s:InitVxShowCapture(pyListVar)
 endfunc
 
 function! s:VxShowCapture_select( winid )
-   let lineno = vimuiex#vxpopup#get_current_line( a:winid )
-   call s:SelectItem_cb( lineno - 1 )
+   let itemIndex = vimuiex#vxpopup#get_current_index( a:winid )
+   call s:SelectItem_cb( itemIndex )
    call popup_close( a:winid )
 endfunc
 
@@ -878,8 +878,8 @@ function! s:SelectHistory_cb(index)
 endfunc
 
 function! s:VxSelectOccurHist_select( winid )
-   let lineno = vimuiex#vxpopup#get_current_line( a:winid )
-   call s:SelectHistory_cb( lineno - 1 )
+   let itemIndex = vimuiex#vxpopup#get_current_index( a:winid )
+   call s:SelectHistory_cb( itemIndex )
    call popup_close( a:winid )
 
    let histItem = s:OccurHistory[0]

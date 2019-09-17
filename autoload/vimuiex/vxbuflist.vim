@@ -226,8 +226,8 @@ function! s:PulsBuferList()
 endfunc
 
 function! s:PopupBufferList_select_buffer( winid )
-   let lineno = vimuiex#vxpopup#get_current_line( a:winid )
-   call s:SelectBuffer_cb( lineno - 1, '' )
+   let itemIndex = vimuiex#vxpopup#get_current_index( a:winid )
+   call s:SelectBuffer_cb( itemIndex, '' )
    call popup_close( a:winid )
 endfunc
 
@@ -240,7 +240,7 @@ function! s:BufListSelect_popup()
    let winid = vimuiex#vxpopup#popup_list( s:GetBufferList(), #{
             \ title: s:GetTitle(),
             \ vxkeymap: [s:buflist_keymap],
-            \ vxcurrent: s:IsOrderedByMru() ? 2 : 1
+            \ vxcurrent: s:IsOrderedByMru() ? 1 : 0
             \ } )
 endfunc
 
