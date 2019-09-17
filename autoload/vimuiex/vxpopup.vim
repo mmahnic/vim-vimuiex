@@ -85,11 +85,6 @@ function! vimuiex#vxpopup#scroll_right( winid )
    call popup_setoptions( a:winid, #{ wrap: 1 } )
 endfunc
 
-function! vimuiex#vxpopup#get_current_index( winid )
-   let vxlist = s:popup_get_vxlist( a:winid )
-   return vxlist.get_current_index()
-endfunc
-
 function! vimuiex#vxpopup#get_vxlist( winid )
    return s:popup_get_vxlist( a:winid )
 endfunc

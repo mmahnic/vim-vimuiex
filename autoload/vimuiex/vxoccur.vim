@@ -740,7 +740,8 @@ function! s:InitVxShowCapture(pyListVar)
 endfunc
 
 function! s:VxShowCapture_select( winid )
-   let itemIndex = vimuiex#vxpopup#get_current_index( a:winid )
+   let vxlist = vimuiex#vxpopup#get_vxlist( a:winid )
+   let itemIndex = vxlist.get_current_index()
    call s:SelectItem_cb( itemIndex )
    call popup_close( a:winid )
 endfunc
@@ -878,7 +879,8 @@ function! s:SelectHistory_cb(index)
 endfunc
 
 function! s:VxSelectOccurHist_select( winid )
-   let itemIndex = vimuiex#vxpopup#get_current_index( a:winid )
+   let vxlist = vimuiex#vxpopup#get_vxlist( a:winid )
+   let itemIndex = vxlist.get_current_index()
    call s:SelectHistory_cb( itemIndex )
    call popup_close( a:winid )
 

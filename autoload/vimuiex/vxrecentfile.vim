@@ -67,7 +67,8 @@ function! s:SelectMarkedFiles_cb(marked, index, winmode)
 endfunc
 
 function! s:OpenRecenFiles_select_file( winid )
-   let itemIndex = vimuiex#vxpopup#get_current_index( a:winid )
+   let vxlist = vimuiex#vxpopup#get_vxlist( a:winid )
+   let itemIndex = vxlist.get_current_index()
    call s:SelectFile_cb( itemIndex, '' )
    call popup_close( a:winid )
 endfunc
