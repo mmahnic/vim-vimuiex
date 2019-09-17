@@ -85,18 +85,13 @@ function! vimuiex#vxpopup#scroll_right( winid )
    call popup_setoptions( a:winid, #{ wrap: 1 } )
 endfunc
 
-function! vimuiex#vxpopup#select_item( winid, itemIndex )
-   call win_execute( a:winid, ":" . (a:itemIndex + 1) )
+function! vimuiex#vxpopup#get_current_index( winid )
+   let vxlist = s:popup_get_vxlist( a:winid )
+   return vxlist.get_current_index()
 endfunc
 
-function! vimuiex#vxpopup#get_current_index( winid )
-   let curidx = line( '.', a:winid ) - 1
-   let vxlist = getwinvar( a:winid, "vxpopup_list" )
-   if type( vxlist ) != v:t_dict
-      return curidx
-   endif
-   let globalIndex = s:map_visible_to_global( vxlist, curidx )
-   return globalIndex
+function! vimuiex#vxpopup#get_vxlist( winid )
+   return s:popup_get_vxlist( a:winid )
 endfunc
 
 " A matcher that matches the words defined by the selector.
@@ -160,6 +155,15 @@ let s:list_keymap = {
          \ "\<esc>" : { win -> popup_close( win ) }
          \ }
 
+function! s:vxlist_select_item( itemIndex ) dict
+   call win_execute( self.windowid, ":" . (a:itemIndex + 1) )
+endfunc
+
+function! s:vxlist_current_index() dict
+   let curidx = line( '.', self.windowid ) - 1
+   return s:map_visible_to_global( self, curidx )
+endfunc
+
 function! vimuiex#vxpopup#popup_list( items, options )
    let current = 0
    let keymaps = [s:list_keymap]
@@ -212,16 +216,26 @@ function! vimuiex#vxpopup#popup_list( items, options )
             \ windowid: winid,
             \ content: a:items,
             \ selector: selector,
-            \ matcher: matcher
+            \ matcher: matcher,
+            \ select_item: funcref( 's:vxlist_select_item' ),
+            \ get_current_index: funcref( 's:vxlist_current_index' )
             \ }
    call setwinvar( winid, 'vxpopup_list', vxlist )
    call s:popup_list_update_content( vxlist )
    if current > 0
       let index = s:map_global_to_visible( vxlist, current )
-      call vimuiex#vxpopup#select_item( winid, index )
+      call vxlist.select_item( index )
    endif
    call popup_show( winid )
    return winid
+endfunc
+
+function! s:popup_get_vxlist( winid )
+   let vxlist = getwinvar( a:winid, "vxpopup_list" )
+   if type( vxlist ) != v:t_dict
+      return 0
+   endif
+   return vxlist
 endfunc
 
 " global -> displayed -> visible
@@ -287,11 +301,7 @@ function! s:filter_get_parent_list( fltwinid )
    if type( vxfilter ) != v:t_dict
       return 0
    endif
-   let vxlist = getwinvar( vxfilter.parent, "vxpopup_list" )
-   if type( vxlist ) != v:t_dict
-      return 0
-   endif
-   return vxlist
+   return s:popup_get_vxlist( vxfilter.parent )
 endfunc
 
 function! s:filter_append_text( fltwinid, key )
