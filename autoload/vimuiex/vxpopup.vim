@@ -6,6 +6,12 @@
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
 
+let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
+if get(g:loadedPlugAuto, 'vimuiex_vxpopup', 0)
+   finish
+endif
+let g:loadedPlugAuto.vimuiex_vxpopup = 1
+
 " A generic handler for (modal) popup window filters with actions defined in
 " `keymaps`, a list of dictionaries or functions.
 "

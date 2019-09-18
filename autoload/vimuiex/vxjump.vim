@@ -8,9 +8,11 @@
 "
 " (requires python; requires python_screen vim patch)
 
-if vxlib#plugin#StopLoading('#au#vimuiex#vxjump')
+let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
+if get(g:loadedPlugAuto, 'vimuiex_vxjump', 0)
    finish
 endif
+let g:loadedPlugAuto.vimuiex_vxjump = 1
 
 " =========================================================================== 
 " Local Initialization - on autoload

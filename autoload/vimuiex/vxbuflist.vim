@@ -9,9 +9,11 @@
 "
 " (requires python)
 
-if vxlib#plugin#StopLoading('#au#vimuiex#vxbuflist')
+let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
+if get(g:loadedPlugAuto, 'vimuiex_vxbuflist', 0)
    finish
 endif
+let g:loadedPlugAuto.vimuiex_vxbuflist = 1
 
 " =========================================================================== 
 " Local Initialization - on autoload

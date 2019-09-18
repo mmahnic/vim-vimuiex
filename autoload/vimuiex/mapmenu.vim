@@ -7,9 +7,11 @@
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
 
-if vxlib#plugin#StopLoading('#au#vimuiex#mapmenu')
+let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
+if get(g:loadedPlugAuto, 'vimuiex_mapmenu', 0)
    finish
 endif
+let g:loadedPlugAuto.vimuiex_mapmenu = 1
 
 let g:plug_mapmenu = get(g:, 'plug_mapmenu', {})
 
@@ -74,5 +76,4 @@ endfunc
 function! vimuiex#mapmenu#SetKeymapTitle(keymap, title)
    let s:KeyMenuItems[a:keymap] = a:title
 endfunc
-
 

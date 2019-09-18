@@ -19,9 +19,11 @@
 " menu activation key. Additional entries can be added to menu. Multiple sets
 " of keys, multiple sets of commands.
 
-if vxlib#plugin#StopLoading('#au#vimuiex#vxmap')
+let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
+if get(g:loadedPlugAuto, 'vimuiex_vxmap', 0)
    finish
 endif
+let g:loadedPlugAuto.vimuiex_vxmap = 1
 
 " =========================================================================== 
 " Local Initialization - on autoload

@@ -6,9 +6,11 @@
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
 
-if vxlib#plugin#StopLoading('#au#vimuiex#vxoccur')
+let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
+if get(g:loadedPlugAuto, 'vimuiex_vxoccur', 0)
    finish
 endif
+let g:loadedPlugAuto.vimuiex_vxoccur = 1
 
 " =========================================================================== 
 " Local Initialization - on autoload

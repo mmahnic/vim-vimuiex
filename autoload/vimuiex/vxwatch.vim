@@ -7,9 +7,12 @@
 " This program comes with ABSOLUTELY NO WARRANTY.
 "
 
-if vxlib#plugin#StopLoading('#au#vimuiex#vxwatch')
+let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
+if get(g:loadedPlugAuto, 'vimuiex_vxwatch', 0)
    finish
 endif
+let g:loadedPlugAuto.vimuiex_vxwatch = 1
+
 if !has('popuplist')
    finish
 endif
