@@ -1,9 +1,7 @@
-
-let g:loadedPlug = get(g:, 'loadedPlug', {})
-if get(g:loadedPlug, 'vxrecentfile', 0)
+if vxlib#load#IsLoaded( 'vxrecentfile' )
    finish
 endif
-let g:loadedPlug.vxrecentfile = -1
+call vxlib#load#SetLoaded( 'vxrecentfile', 1 )
 
 " <id="vimuiex#vxrecentfile" require="popuplist||python&&(!gui_running||python_screen)">
 
@@ -82,4 +80,3 @@ nmap <silent><unique> <Plug>VxOpenRecentFile :VxOpenRecentFile<cr>
 imap <silent><unique> <Plug>VxOpenRecentFile <Esc>:VxOpenRecentFile<cr>
 vmap <silent><unique> <Plug>VxOpenRecentFile :<c-u>VxOpenRecentFile<cr>
 
-let g:loadedPlug.vxrecentfile = 1

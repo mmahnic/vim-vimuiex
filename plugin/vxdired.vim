@@ -1,9 +1,7 @@
-
-let g:loadedPlug = get(g:, 'loadedPlug', {})
-if get(g:loadedPlug, 'vxdired', 0)
+if vxlib#load#IsLoaded( 'vxdired' )
    finish
 endif
-let g:loadedPlug.vxdired = -1
+call vxlib#load#SetLoaded( 'vxdired', 1 )
 
 " <id="vimuiex#vxdired" require="popuplist||python&&(!gui_running||python_screen)">
 
@@ -101,4 +99,3 @@ nmap <silent><unique> <Plug>VxFileFilter :VxFileFilter<cr>
 imap <silent><unique> <Plug>VxFileFilter <Esc>:VxFileFilter<cr>
 vmap <silent><unique> <Plug>VxFileFilter :<c-u>VxFileFilter<cr>
 
-let g:loadedPlug.vxdired = 1

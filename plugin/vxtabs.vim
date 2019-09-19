@@ -1,12 +1,9 @@
-
-let g:loadedPlug = get(g:, 'loadedPlug', {})
-if get(g:loadedPlug, 'vxtabs', 0)
+if vxlib#load#IsLoaded( 'vxtabs' )
    finish
 endif
-let g:loadedPlug.vxtabs = -1
+call vxlib#load#SetLoaded( 'vxtabs', 1 )
 
 " <id="vimuiex#vxtabs" require="popuplist||python&&(!gui_running||python_screen)">
 
 command VxTabSelect call vimuiex#vxtabs#VxTabSelect()
 
-let g:loadedPlug.vxtabs = 1

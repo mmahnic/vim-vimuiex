@@ -1,9 +1,7 @@
-
-let g:loadedPlug = get(g:, 'loadedPlug', {})
-if get(g:loadedPlug, 'vxcapture', 0)
+if vxlib#load#IsLoaded( 'vxcapture' )
    finish
 endif
-let g:loadedPlug.vxcapture = -1
+call vxlib#load#SetLoaded( 'vxcapture', 1 )
 
 " <id="vimuiex#vxcapture" require="popuplist||python&&(!gui_running||python_screen)">
 
@@ -23,4 +21,3 @@ imap <silent><unique> <Plug>VxTagStack <Esc>:VxTags<cr>
 vmap <silent><unique> <Plug>VxTagStack :<c-u>VxTags<cr>
 nmap <silent><unique> <Plug>VxSpellZeq :call vimuiex#vxcapture#VxSpellZeq()<cr>
 
-let g:loadedPlug.vxcapture = 1

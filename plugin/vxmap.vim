@@ -1,9 +1,7 @@
-
-let g:loadedPlug = get(g:, 'loadedPlug', {})
-if get(g:loadedPlug, 'vxmap', 0)
+if vxlib#load#IsLoaded( 'vxmap' )
    finish
 endif
-let g:loadedPlug.vxmap = -1
+call vxlib#load#SetLoaded( 'vxmap', 1 )
 
 " <id="vimuiex#vxmap#quickkeys" require="menu">
 
@@ -38,4 +36,3 @@ nmap <silent><unique> <Plug>VxMapDefaultKeys :call vimuiex#vxmap#InstallKeys('de
 imap <silent><unique> <Plug>VxMapDefaultKeys <Esc>:call vimuiex#vxmap#InstallKeys('default','default')<cr>
 vmap <silent><unique> <Plug>VxMapDefaultKeys <Esc>:call vimuiex#vxmap#InstallKeys('default','default')<cr>
 
-let g:loadedPlug.vxmap = 1

@@ -1,9 +1,7 @@
-
-let g:loadedPlug = get(g:, 'loadedPlug', {})
-if get(g:loadedPlug, 'vxproject', 0)
+if vxlib#load#IsLoaded( 'vxproject' )
    finish
 endif
-let g:loadedPlug.vxproject = -1
+call vxlib#load#SetLoaded( 'vxproject', 1 )
 
 " <id="vimuiex#vxproject" require="popuplist||python&&(!gui_running||python_screen)">
 
@@ -32,6 +30,4 @@ let g:vxproject_lister = g:plug_vxproject.lister
 
 command VxProjectFileFilter call vimuiex#vxproject#SelectProjectFile()
 nmap <silent><unique> <Plug>VxProjectFileFilter :VxProjectFileFilter<cr>
-
-let g:loadedPlug.vxproject = 1
 

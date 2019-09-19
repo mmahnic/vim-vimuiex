@@ -1,9 +1,7 @@
-
-let g:loadedPlug = get(g:, 'loadedPlug', {})
-if get(g:loadedPlug, 'vxoccur', 0)
+if vxlib#load#IsLoaded( 'vxoccur' )
    finish
 endif
-let g:loadedPlug.vxoccur = -1
+call vxlib#load#SetLoaded( 'vxoccur', 1 )
 
 " <id="vimuiex#vxoccur" require="popuplist||python&&(!gui_running||python_screen)">
 
@@ -70,4 +68,3 @@ nmap <unique> <Plug>VxOccurRegex :<c-u>VxOccur<cr>
 "imap <unique> <Plug>VxOccurRegex <Esc>:<c-u>VxOccur<cr>
 "vmap <unique> <Plug>VxOccurRegex :<c-u>VxOccur<cr>
 
-let g:loadedPlug.vxoccur = 1

@@ -1,11 +1,7 @@
-
-let g:loadedPlug = get(g:, 'loadedPlug', {})
-if get(g:loadedPlug, 'vxbuflist', 0)
+if vxlib#load#IsLoaded( 'vxbuflist' )
    finish
 endif
-let g:loadedPlug.vxbuflist = -1
-
-call vxlib#plugin#Init() " just in case
+call vxlib#load#SetLoaded( 'vxbuflist', 1 )
 
 " <id="vimuiex#vxbuflist" require="popuplist||python&&(!gui_running||python_screen)">
 
@@ -29,4 +25,3 @@ nmap <silent><unique> <Plug>VxBufListSelect :VxBufListSelect<cr>
 imap <silent><unique> <Plug>VxBufListSelect <Esc>:VxBufListSelect<cr>
 vmap <silent><unique> <Plug>VxBufListSelect :<c-u>VxBufListSelect<cr>
 
-let g:loadedPlug.vxbuflist = 1
