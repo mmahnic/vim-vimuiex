@@ -8,11 +8,10 @@
 
 " TODO: move vxoccur_defaults to ftplugins (bib/, html/, slice/, ...)
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxoccur_defaults', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxoccur_defaults' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxoccur_defaults = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxoccur_defaults', 1 )
 
 " =========================================================================== 
 " Local Initialization - on autoload

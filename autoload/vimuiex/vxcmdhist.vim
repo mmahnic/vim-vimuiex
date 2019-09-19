@@ -5,14 +5,11 @@
 " Created: August 2010
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
-"
-" (requires python)
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxcmdhist', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxcmdhist' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxcmdhist = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxcmdhist', 1 )
 
 " =========================================================================== 
 " Local Initialization - on autoload

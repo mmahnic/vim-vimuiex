@@ -8,17 +8,17 @@
 "
 " (requires python; requires python_screen vim patch)
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxjump', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxjump' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxjump = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxjump', 1 )
 
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-call vxlib#python#prepare()
-" exec vxlib#plugin#MakeSID()
+if has('python')
+   call vxlib#python#prepare()
+endif
 " =========================================================================== 
 
 function! vimuiex#vxjump#VxLineJump()

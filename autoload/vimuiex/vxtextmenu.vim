@@ -5,19 +5,16 @@
 " Created: April 2009
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
-"
-" (requires python; works only in terminal; using curses)
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxtextmenu', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxtextmenu' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxtextmenu = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxtextmenu', 1 )
 
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-if !has('popuplist')
+if !has('popuplist') && has('python')
    call vxlib#python#prepare()
 endif
 exec vxlib#plugin#MakeSID()

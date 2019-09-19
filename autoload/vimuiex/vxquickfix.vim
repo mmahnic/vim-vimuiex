@@ -5,19 +5,15 @@
 " Created: January 2010
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
-"
-" (requires python)
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxquickfix', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxquickfix' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxquickfix = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxquickfix', 1 )
 
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-" call vxlib#python#prepare()
 exec vxlib#plugin#MakeSID()
 let s:Qfitems = []
 " =========================================================================== 

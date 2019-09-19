@@ -5,15 +5,15 @@
 " Created: May 2011
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
-"
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxwatch', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxwatch' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxwatch = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxwatch', 1 )
 
 if !has('popuplist')
+   call vxlib#load#SetError( '#vimuiex#vxwatch', 'Missing: popuplist' )
+   call vxlib#load#SetError( '#vimuiex#vxwatch', 'TODO: vxpopup' )
    finish
 endif
 

@@ -8,16 +8,15 @@
 "
 " (requires python; works only in terminal; using curses)
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxdired', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxdired' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxdired = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxdired', 1 )
 
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-if ! has('popuplist')
+if ! has('popuplist') && has('python')
    call vxlib#python#prepare()
 endif
 exec vxlib#plugin#MakeSID()

@@ -9,16 +9,15 @@
 "
 " (requires python)
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxbuflist', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxbuflist' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxbuflist = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxbuflist', 1 )
 
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-if !has('popuplist')
+if !has('popuplist') && has('python')
    call vxlib#python#prepare()
 endif
 exec vxlib#plugin#MakeSID()

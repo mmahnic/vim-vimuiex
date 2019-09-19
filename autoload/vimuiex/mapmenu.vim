@@ -7,11 +7,10 @@
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_mapmenu', 0)
+if vxlib#load#IsLoaded( '#vimuiex#mapmenu' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_mapmenu = 1
+call vxlib#load#SetLoaded( '#vimuiex#mapmenu', 1 )
 
 let g:plug_mapmenu = get(g:, 'plug_mapmenu', {})
 

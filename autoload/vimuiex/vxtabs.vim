@@ -5,19 +5,15 @@
 " Created: April 2011
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
-"
-" (requires python)
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxtabs', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxtabs' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxtabs = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxtabs', 1 )
 
 " =========================================================================== 
 " Local Initialization - on autoload
 " =========================================================================== 
-" call vxlib#python#prepare()
 exec vxlib#plugin#MakeSID()
 " let g:_VxPopupListPosDefault['VxTabSelect'] = 'position=311'
 " =========================================================================== 

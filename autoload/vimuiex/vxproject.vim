@@ -8,11 +8,10 @@
 " License: GPL (http://www.gnu.org/copyleft/gpl.html)
 " This program comes with ABSOLUTELY NO WARRANTY.
 
-let g:loadedPlugAuto = get(g:, 'loadedPlugAuto', {})
-if get(g:loadedPlugAuto, 'vimuiex_vxproject', 0)
+if vxlib#load#IsLoaded( '#vimuiex#vxproject' )
    finish
 endif
-let g:loadedPlugAuto.vimuiex_vxproject = 1
+call vxlib#load#SetLoaded( '#vimuiex#vxproject', 1 )
 
 let s:pyscript = fnamemodify(expand('<sfile>'), ':p:h:h:h') . '/modpython/script/vxprj-listfiles.py'
 
