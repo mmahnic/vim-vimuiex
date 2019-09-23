@@ -65,24 +65,22 @@ function! s:SelectMarkedFiles_cb(marked, index, winmode)
 endfunc
 
 function! s:OpenRecenFiles_select_file( winid )
-   let vxlist = vimuiex#vxpopup#get_vxlist( a:winid )
-   let itemIndex = vxlist.get_current_index()
+   let chooser = vxlib#chooser#GetWinVar( a:winid )
+   let itemIndex = chooser.GetCurrentIndex()
    call s:SelectFile_cb( itemIndex, '' )
-   call popup_close( a:winid )
+   call chooser.Close()
 endfunc
 
 let s:recent_keymap = {
          \ "\<cr>" : { win -> s:OpenRecenFiles_select_file( win ) }
          \ }
 
-
-" This version of popup uses the new popup* set of functions.
-function! s:OpenRecentFile_popup()
-   let winid = vimuiex#vxpopup#popup_list( s:GetRecentFiles(), #{
+function! s:OpenRecentFile_chooser()
+   let chooser = vxlib#chooser#Create( s:GetRecentFiles(), #{
             \ title: "Recent Files",
-            \ vxkeymap: [s:recent_keymap],
-            \ vxcolumns: 2
+            \ vx: #{ keymaps: [s:recent_keymap], columns: 2 }
             \ } )
+   let winid = chooser.Show()
 endfunc
 
 " OLD: Uses the C popuplist function.
@@ -115,7 +113,7 @@ endfunc
 
 function! vimuiex#vxrecentfile#VxOpenRecentFile()
    if ( v:version >= 801 )
-      call s:OpenRecentFile_popup()
+      call s:OpenRecentFile_chooser()
       return
    endif
    if has('popuplist')
