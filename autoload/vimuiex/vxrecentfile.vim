@@ -65,7 +65,7 @@ function! s:SelectMarkedFiles_cb(marked, index, winmode)
 endfunc
 
 function! s:OpenRecenFiles_select_file( winid )
-   let chooser = vxlib#chooser#GetWinVar( a:winid )
+   let chooser = vxlib#popup#GetState( a:winid )
    let itemIndex = chooser.GetCurrentIndex()
    call s:SelectFile_cb( itemIndex, '' )
    call chooser.Close()
