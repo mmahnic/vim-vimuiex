@@ -227,23 +227,23 @@ function! s:PulsBuferList()
 endfunc
 
 function! s:PopupBufferList_select_buffer( winid )
-   let vxlist = vimuiex#vxpopup#get_vxlist( a:winid )
-   let itemIndex = vxlist.get_current_index()
+   let chooser = vxlib#popup#GetState( a:winid )
+   let itemIndex = chooser.GetCurrentIndex()
    call s:SelectBuffer_cb( itemIndex, '' )
-   call popup_close( a:winid )
+   call chooser.Close()
 endfunc
 
 let s:buflist_keymap = {
          \ "\<cr>" : { win -> s:PopupBufferList_select_buffer( win ) }
          \ }
 
-" This version of popup uses the new popup* set of functions.
-function! s:BufListSelect_popup()
-   let winid = vimuiex#vxpopup#popup_list( s:GetBufferList(), #{
+function! s:BufListSelect_chooser()
+   let chooser = vxlib#chooser#Create( s:GetBufferList(), #{
             \ title: s:GetTitle(),
-            \ vxkeymap: [s:buflist_keymap],
-            \ vxcurrent: s:IsOrderedByMru() ? 1 : 0
+            \ vx: #{ keymaps: [s:buflist_keymap],
+            \        current: s:IsOrderedByMru() ? 1 : 0 }
             \ } )
+   let winid = chooser.Show()
 endfunc
 
 " OLD: This version of popuplist was developed in C (more precisely with the
@@ -306,7 +306,7 @@ endfunc
 
 function! vimuiex#vxbuflist#VxBufListSelect()
    if ( v:version >= 801 )
-      call s:BufListSelect_popup()
+      call s:BufListSelect_chooser()
       return
    endif
    if has('popuplist')
