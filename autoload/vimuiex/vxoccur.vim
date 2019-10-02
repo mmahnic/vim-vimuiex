@@ -740,10 +740,10 @@ function! s:InitVxShowCapture(pyListVar)
 endfunc
 
 function! s:VxShowCapture_select( winid )
-   let vxlist = vimuiex#vxpopup#get_vxlist( a:winid )
-   let itemIndex = vxlist.get_current_index()
+   let chooser = vxlib#popup#GetState( a:winid )
+   let itemIndex = chooser.GetCurrentIndex()
    call s:SelectItem_cb( itemIndex )
-   call popup_close( a:winid )
+   call chooser.Close()
 endfunc
 
 " occurType, title [, saveHistory, historyItem]
@@ -781,10 +781,11 @@ function! s:VxShowCapture(occurType, title, ...)
       let showcapture_keymap = {
                \ "\<cr>" : { win -> s:VxShowCapture_select( win ) }
                \ }
-      let winid = vimuiex#vxpopup#popup_list( items, #{
+      let chooser = vxlib#chooser#Create( items, #{
                \ title: a:title,
-               \ vxkeymap: [showcapture_keymap]
+               \ vx: #{ keymaps: [showcapture_keymap] }
                \ } )
+      call chooser.Show()
    elseif has('popuplist')
       let opts = { 'titles': '/' }
       let opts.highlight = s:capWord
@@ -879,10 +880,10 @@ function! s:SelectHistory_cb(index)
 endfunc
 
 function! s:VxSelectOccurHist_select( winid )
-   let vxlist = vimuiex#vxpopup#get_vxlist( a:winid )
-   let itemIndex = vxlist.get_current_index()
+   let chooser = vxlib#popup#GetState( a:winid )
+   let itemIndex = chooser.GetCurrentIndex()
    call s:SelectHistory_cb( itemIndex )
-   call popup_close( a:winid )
+   call chooser.Close()
 
    let histItem = s:OccurHistory[0]
    call s:VxShowCapture(histItem.type, histItem.title, 0, histItem)
@@ -904,10 +905,11 @@ function! vimuiex#vxoccur#VxSelectOccurHist()
       let selecthist_keymap = {
                \ "\<cr>" : { win -> s:VxSelectOccurHist_select( win ) }
                \ }
-      let winid = vimuiex#vxpopup#popup_list( items, #{
+      let chooser = vxlib#chooser#Create( items, #{
                \ title: "Activate results",
-               \ vxkeymap: [selecthist_keymap]
+               \ vx: #{ keymaps: [selecthist_keymap] }
                \ } )
+      call chooser.Show()
    elseif has('popuplist')
       let rslt = popuplist(items, 'Activate results')
       if rslt.status == 'accept'
