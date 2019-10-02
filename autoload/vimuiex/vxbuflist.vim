@@ -233,14 +233,14 @@ function! s:PopupBufferList_select_buffer( winid )
    call chooser.Close()
 endfunc
 
-let s:buflist_keymap = {
-         \ "\<cr>" : { win -> s:PopupBufferList_select_buffer( win ) }
+let s:buflist_actions = {
+         \ 'accept' : { win, key -> s:PopupBufferList_select_buffer( win ) }
          \ }
 
 function! s:BufListSelect_chooser()
    let chooser = vxlib#chooser#Create( s:GetBufferList(), #{
             \ title: s:GetTitle(),
-            \ vx: #{ keymaps: [s:buflist_keymap],
+            \ vx: #{ actions: s:buflist_actions,
             \        current: s:IsOrderedByMru() ? 1 : 0 }
             \ } )
    let winid = chooser.Show()

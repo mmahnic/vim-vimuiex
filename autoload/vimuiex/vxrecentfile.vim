@@ -71,14 +71,14 @@ function! s:OpenRecenFiles_select_file( winid )
    call chooser.Close()
 endfunc
 
-let s:recent_keymap = {
-         \ "\<cr>" : { win -> s:OpenRecenFiles_select_file( win ) }
+let s:recent_actions = {
+         \ 'accept' : { win, key -> s:OpenRecenFiles_select_file( win ) }
          \ }
 
 function! s:OpenRecentFile_chooser()
    let chooser = vxlib#chooser#Create( s:GetRecentFiles(), #{
             \ title: "Recent Files",
-            \ vx: #{ keymaps: [s:recent_keymap], columns: 2 }
+            \ vx: #{ actions: s:recent_actions, columns: 2 }
             \ } )
    let winid = chooser.Show()
 endfunc

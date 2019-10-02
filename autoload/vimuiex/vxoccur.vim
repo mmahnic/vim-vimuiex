@@ -778,12 +778,12 @@ function! s:VxShowCapture(occurType, title, ...)
    endif
 
    if ( v:version >= 801 )
-      let showcapture_keymap = {
-               \ "\<cr>" : { win -> s:VxShowCapture_select( win ) }
+      let showcapture_actions = {
+               \ 'accept': { win, key -> s:VxShowCapture_select( win ) }
                \ }
       let chooser = vxlib#chooser#Create( items, #{
                \ title: a:title,
-               \ vx: #{ keymaps: [showcapture_keymap] }
+               \ vx: #{ actions: showcapture_actions }
                \ } )
       call chooser.Show()
    elseif has('popuplist')
@@ -902,12 +902,12 @@ function! vimuiex#vxoccur#VxSelectOccurHist()
 
    let s:ShowHistoryItems = 0
    if ( v:version >= 801 )
-      let selecthist_keymap = {
-               \ "\<cr>" : { win -> s:VxSelectOccurHist_select( win ) }
+      let selecthist_actions = {
+               \ 'accept': { win -> s:VxSelectOccurHist_select( win ) }
                \ }
       let chooser = vxlib#chooser#Create( items, #{
                \ title: "Activate results",
-               \ vx: #{ keymaps: [selecthist_keymap] }
+               \ vx: #{ actions: selecthist_actions }
                \ } )
       call chooser.Show()
    elseif has('popuplist')
