@@ -11,12 +11,12 @@ if vxlib#load#IsLoaded( '#vimuiex#vxcapture' )
 endif
 call vxlib#load#SetLoaded( '#vimuiex#vxcapture', 1 )
 
-" =========================================================================== 
+" ===========================================================================
 " Local Initialization - on autoload
-" =========================================================================== 
+" ===========================================================================
 exec vxlib#plugin#MakeSID()
 let s:captured = []
-" =========================================================================== 
+" ===========================================================================
 
 function! s:ArgvList(skipLast)
    let i = 0
@@ -48,7 +48,10 @@ function! vimuiex#vxcapture#VxCmd(cmd)
    for line in t1
       call add(s:captured, vxlib#cmd#ReplaceCtrlChars(line))
    endfor
-   if has('popuplist')
+   if ( v:version >= 801 )
+      let chooser = vxlib#chooser#Create( s:GetCaptured(), #{ title: 'Command output' } )
+      call chooser.Show()
+   elseif has('popuplist')
       let rslt = popuplist(s:GetCaptured(), 'Command output')
    else
       call vimuiex#vxlist#VxPopup(s:GetCaptured(), 'Command output')
@@ -74,7 +77,18 @@ function! s:SelectItem_marks(index)
 endfunc
 
 function! vimuiex#vxcapture#VxMarks()
-   if has('popuplist')
+   if ( v:version >= 801 )
+      " TODO VxMarks actions have to close the window
+      let actions = {
+               \ 'accept': { win, key -> s:SelectItem_marks(
+               \     vxlib#popup#GetState(win).GetCurrentIndex() ) }
+               \ }
+      let chooser = vxlib#chooser#Create( s:GetMarkList(), #{
+               \ title: 'Marks',
+               \ vx: #{ actions: actions }
+               \ } )
+      call chooser.Show()
+   elseif has('popuplist')
       let rslt = popuplist(s:GetMarkList(), 'Marks')
       if rslt.status == 'accept'
          call s:SelectItem_marks(rslt.current)
@@ -114,7 +128,22 @@ function! s:RunRegMacro_cb_p(state)
 endfunc
 
 function! vimuiex#vxcapture#VxDisplay()
-   if has('popuplist')
+   if ( v:version >= 801 )
+      " TODO VxDisplay actions have to close the window
+      let actions = {
+               \ 'accept': { win, key -> s:SelectItem_regs(
+               \     vxlib#popup#GetState(win).GetCurrentIndex() ) },
+               \ 'run-macro': { win, key -> s:RunRegMacro_cb(
+               \     vxlib#popup#GetState(win).GetCurrentIndex() ) }
+               \ }
+      " TODO: make run-macro work
+      let keymaps = [ { '@': 'run-macro' } ]
+      let chooser = vxlib#chooser#Create( s:GetRegisterList(), #{
+               \ title: 'Registers',
+               \ vx: #{ actions: actions, keymaps: keymaps }
+               \ } )
+      call chooser.Show()
+   elseif has('popuplist')
       let rslt = popuplist(s:GetRegisterList(), 'Registers', {
                \ 'commands': { 'run-macro': s:SNR . 'RunRegMacro_cb_p' },
                \ 'keymap': {
@@ -172,7 +201,18 @@ function! s:SelectItem_tags(index)
 endfunc
 
 function! vimuiex#vxcapture#VxTags()
-   if has('popuplist')
+   if ( v:version >= 801 )
+      " TODO VxTags actions have to close the window
+      let actions = {
+               \ 'accept': { win, key -> s:SelectItem_tags(
+               \     vxlib#popup#GetState(win).GetCurrentIndex() ) }
+               \ }
+      let chooser = vxlib#chooser#Create( s:GetTagList(), #{
+               \ title: 'Tag Stack',
+               \ vx: #{ current: s:current, actions: actions }
+               \ } )
+      call chooser.Show()
+   elseif has('popuplist')
       let rslt = popuplist(s:GetTagList(), 'Tag Stack', {
                \ 'titles': '  #',
                \ 'current': s:current
@@ -219,7 +259,19 @@ function! vimuiex#vxcapture#VxSpellZeq()
    let title = s:captured[0]
    let s:captured = s:captured[1:-2]
    let s:captured[0] = printf('%*s', -len(title)-5, s:captured[0])
-   if has('popuplist')
+
+   if ( v:version >= 801 )
+      " TODO VxSpellZq actions have to close the window
+      let actions = {
+               \ 'accept': { win, key -> s:SelectItem_spell(
+               \     vxlib#popup#GetState(win).GetCurrentIndex() ) }
+               \ }
+      let chooser = vxlib#chooser#Create( s:captured, #{
+               \ title: title,
+               \ vx: #{ actions: actions }
+               \ } )
+      call chooser.Show()
+   elseif has('popuplist')
       let rslt = popuplist(s:captured, title)
       if rslt.status == 'accept'
          call s:SelectItem_spell(rslt.current)
